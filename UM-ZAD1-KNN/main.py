@@ -1,28 +1,28 @@
-import os
-from dotenv import load_dotenv
+import numpy as np
 
-from tmdb_client import TMDBClient
 from feature_extractor import FeatureExtractor
 from feature_encoder import FeatureEncoder
+from movie_retriever import MovieRetriever
+from rating_retriever import RatingRetriever
+from knn import KnnClassifier
+from rating_prediction import RatingPrediction
 
-load_dotenv()
-api_key = os.getenv("TMDB_API_KEY")
-
-features_to_extract = ['genres']
+features_to_extract = ['keywords', 'genres']
 
 if __name__ == '__main__':
-    tmdb_client = TMDBClient(api_key=api_key)
-    feature_extractor = FeatureExtractor(features_to_extract)
-    feature_encoder = FeatureEncoder()
+    movies = MovieRetriever().get_movies()
+    ratings_per_person = RatingRetriever('../data/train.csv').get_ratings_per_person()
 
-    movie = tmdb_client.get_movie_by_id(664413)
-    features = feature_extractor.extract(movie)
+    features = FeatureExtractor(features_to_extract).extract(movies)
+    encoded_features = FeatureEncoder(features).encode(features)
 
-    print(features)
+    classifier_per_person = {}
+    for person, ratings in ratings_per_person.items():
+        X = []
+        y = []
+        for movie_number in ratings:
+            X.append(np.concatenate(list(encoded_features[movie_number].values())))
+            y.append(ratings[movie_number])
+        classifier_per_person[person] = KnnClassifier(k=1, data=X, data_labels=y)
 
-    encoded_features = feature_encoder.encode(features)
-    print(encoded_features)
-
-
-
-
+    RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, encoded_features)

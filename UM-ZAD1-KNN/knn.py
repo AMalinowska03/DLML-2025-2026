@@ -14,7 +14,7 @@ class KnnClassifier():
             distances.append((distance, label))
         distances.sort(key = lambda x: x[0])
         k_nearest_labels = [label for _, label in distances[:self.k]]
-        return max(set(k_nearest_labels), key=k_nearest_labels.count)
+        return int(max(set(k_nearest_labels), key=k_nearest_labels.count))
 
     def _euclidean_distance(self, x1, x2):
         return np.sqrt(np.sum((np.array(x1) - np.array(x2))**2))

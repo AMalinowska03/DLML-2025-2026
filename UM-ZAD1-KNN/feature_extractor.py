@@ -8,5 +8,9 @@ class FeatureExtractor:
     def __init__(self, feature_extractors_to_include):
         self.feature_extractors_to_include = feature_extractors_to_include
 
-    def extract(self, movie):
-        return {name: extractor(movie) for name, extractor in feature_extractors.items() if name in self.feature_extractors_to_include}
+    def extract(self, movies):
+        movie_features = {}
+        for movie_number, movie in movies.items():
+            movie_features[movie_number] = {name: extractor(movie) for name, extractor in feature_extractors.items()
+                                            if name in self.feature_extractors_to_include}
+        return movie_features
