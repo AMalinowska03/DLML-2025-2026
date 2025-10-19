@@ -1,7 +1,16 @@
 feature_extractors = {
     'keywords': lambda m: [keyword['name'] for keyword in m['keywords']['keywords']],
     'genres': lambda m: [genre['name'] for genre in m['genres']],
-    'production_companies': lambda m: [production_company['name'] for production_company in m['production_companies']]
+    'production_companies': lambda m: [production_company['name'] for production_company in m['production_companies']],
+    'original_language': lambda m: m['original_language'],
+    'budget': lambda m: m['budget'],
+    'overview': lambda m: [m['overview']],
+    'release_date': lambda m: m['release_date'],
+    'vote_average': lambda m: m['vote_average'],
+    'runtime': lambda m: m['runtime'],
+    'popularity': lambda m: m['popularity'],
+    'revenue': lambda m: m['revenue'],
+    'actors': lambda m: [actor['name'] for actor in m['credits']['cast'] if actor['known_for_department'] == "Acting"]
 }
 
 class FeatureExtractor:

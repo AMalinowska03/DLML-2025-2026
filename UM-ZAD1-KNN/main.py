@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.preprocessing import MaxAbsScaler
 
 from feature_extractor import FeatureExtractor
 from feature_encoder import FeatureEncoder
@@ -8,7 +9,22 @@ from knn import KnnClassifier
 from rating_prediction import RatingPrediction
 from cross_validation import cross_validation
 
-features_to_extract = ['keywords', 'genres']
+features_to_extract = [
+    'keywords',
+    'genres',
+    'production_companies',
+    'original_language',
+    'overview',
+    'budget',
+    'release_date',
+    'vote_average',
+    'runtime',
+    'popularity',
+    'revenue',
+    'actors'
+]
+k_neighbors = 15
+cross_validation_folds = 10
 
 if __name__ == '__main__':
     movies = MovieRetriever().get_movies()
@@ -26,8 +42,9 @@ if __name__ == '__main__':
             X.append(np.concatenate(list(encoded_features[movie_number].values())))
             y.append(ratings[movie_number])
         print(f"Calculating accuracy for person {person}...")
-        accuracy_per_person.append(cross_validation(X, y, 10, 1))
-        classifier_per_person[person] = KnnClassifier(k=1, data=X, data_labels=y)
+        X_scaled = MaxAbsScaler().fit_transform(X)
+        accuracy_per_person.append(cross_validation(X_scaled, y, cross_validation_folds, k_neighbors))
+        classifier_per_person[person] = KnnClassifier(k=k_neighbors, data=X_scaled, data_labels=y)
 
     print(f"Accuracy per person (mean): {np.mean(accuracy_per_person)}")
 
