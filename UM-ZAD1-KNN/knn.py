@@ -6,7 +6,10 @@ class KnnClassifier():
         self.data = data
         self.data_labels = data_labels
 
-    def predict(self, x):
+    def predict(self, X):
+        return [self.predict_single(x) for x in X]
+
+    def predict_single(self, x):
         distances = []
         for i in range(len(self.data)):
             distance = self._euclidean_distance(x, self.data[i])
