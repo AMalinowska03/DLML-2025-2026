@@ -1,4 +1,5 @@
 import numpy as np
+from similarities import process_similarity_full
 
 class KnnClassifier():
     def __init__(self, k, data, data_labels):
@@ -12,10 +13,10 @@ class KnnClassifier():
     def predict_single(self, x):
         distances = []
         for i in range(len(self.data)):
-            distance = self._euclidean_distance(x, self.data[i])
+            distance = process_similarity_full(x, self.data[i])
             label = self.data_labels[i]
             distances.append((distance, label))
-        distances.sort(key = lambda x: x[0])
+        distances.sort(key = lambda x: x[0], reverse=True)
         k_nearest_labels = [label for _, label in distances[:self.k]]
         return int(max(set(k_nearest_labels), key=k_nearest_labels.count))
 

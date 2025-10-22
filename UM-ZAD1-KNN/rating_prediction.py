@@ -8,5 +8,6 @@ class RatingPrediction:
     def submit_ratings_predictions(self, classifiers_per_person, encoded_features):
         self.ratings[3] = self.ratings[3].astype(object)
         for idx, rating in self.ratings.iterrows():
-            self.ratings.at[idx, 3] = str(classifiers_per_person[rating[1]].predict_single(np.concatenate(list(encoded_features[rating[2]].values()))))
-        self.ratings.to_csv("../data/submission.csv", sep=';', index=False, header=False)
+            # self.ratings.at[idx, 3] = str(classifiers_per_person[rating[1]].predict_single(np.concatenate(list(encoded_features[rating[2]].values()))))
+            self.ratings.at[idx, 3] = str(classifiers_per_person[rating[1]].predict_single(encoded_features[rating[2]]))
+        self.ratings.to_csv("./submission.csv", sep=';', index=False, header=False)

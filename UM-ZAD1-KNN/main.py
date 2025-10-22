@@ -8,6 +8,7 @@ from rating_retriever import RatingRetriever
 from knn import KnnClassifier
 from rating_prediction import RatingPrediction
 from cross_validation import cross_validation
+from similarities import generate_genres_similarities
 
 features_to_extract = [
     'keywords',
@@ -27,6 +28,7 @@ k_neighbors = 15
 cross_validation_folds = 10
 
 if __name__ == '__main__':
+    # generate_genres_similarities()
     movies = MovieRetriever().get_movies()
     ratings_per_person = RatingRetriever('../data/train.csv').get_ratings_per_person()
 
@@ -39,12 +41,13 @@ if __name__ == '__main__':
         X = []
         y = []
         for movie_number in ratings:
-            X.append(np.concatenate(list(encoded_features[movie_number].values())))
+            # X.append(np.concatenate(list(encoded_features[movie_number].values())))
+            X.append(encoded_features[movie_number])
             y.append(ratings[movie_number])
         print(f"Calculating accuracy for person {person}...")
-        X_scaled = MaxAbsScaler().fit_transform(X)
-        accuracy_per_person.append(cross_validation(X_scaled, y, cross_validation_folds, k_neighbors))
-        classifier_per_person[person] = KnnClassifier(k=k_neighbors, data=X_scaled, data_labels=y)
+        # X_scaled = MaxAbsScaler().fit_transform(X)
+        accuracy_per_person.append(cross_validation(X, y, cross_validation_folds, k_neighbors))
+        classifier_per_person[person] = KnnClassifier(k=k_neighbors, data=X, data_labels=y)
 
     print(f"Accuracy per person (mean): {np.mean(accuracy_per_person)}")
 

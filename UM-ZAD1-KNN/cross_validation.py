@@ -11,8 +11,17 @@ def evaluate_fold(fold, folds_X, folds_y, k_folds, k_neighbors):
     X_val = folds_X[fold]
     y_val = folds_y[fold]
 
-    X_train = np.vstack([folds_X[i] for i in range(k_folds) if i != fold])
-    y_train = np.hstack([folds_y[i] for i in range(k_folds) if i != fold])
+    X_train = []
+    for i in range(k_folds):
+        if i != fold:
+            X_train.extend(folds_X[i])
+
+    y_train = []
+    for i in range(k_folds):
+        if i != fold:
+            y_train.extend(folds_y[i])
+    # X_train = np.vstack([folds_X[i] for i in range(k_folds) if i != fold])
+    # y_train = np.hstack([folds_y[i] for i in range(k_folds) if i != fold])
 
     model = KnnClassifier(k_neighbors, X_train, y_train)
     y_pred = model.predict(X_val)
