@@ -1,3 +1,5 @@
+import logging
+
 from joblib import Parallel, delayed
 import numpy as np
 
@@ -24,9 +26,6 @@ def cross_validation(X, y, k_folds, k_neighbors):
     folds_X = np.array_split(X, k_folds)
     folds_y = np.array_split(y, k_folds)
 
-    accuracies = Parallel(n_jobs=n_jobs)(
-        delayed(evaluate_fold)(fold, folds_X, folds_y, k_folds, k_neighbors)
-        for fold in range(k_folds)
-    )
+    accuracies = [evaluate_fold(fold, folds_X, folds_y, k_folds, k_neighbors) for fold in range(k_folds)]
 
     return np.mean(accuracies)
