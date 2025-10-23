@@ -25,7 +25,7 @@ def select_best_features(person, features, ratings_per_person):
                 for outer_k, inner in features.items()
             }
             logging.info(f"Training classifier for person {person} with features: {candidate_features}...")
-            score, _ = train_classifier(person, filtered_features, ratings_per_person)
+            score, _, _ = train_classifier(person, filtered_features, ratings_per_person)
             if score > best_feature_score:
                 improved = True
                 best_feature_score = score

@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from sklearn.preprocessing import MaxAbsScaler
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from feature_extractor import FeatureExtractor
@@ -9,7 +8,6 @@ from feature_encoder import FeatureEncoder
 from movie_retriever import MovieRetriever
 from rating_retriever import RatingRetriever
 from rating_prediction import RatingPrediction
-from cross_validation import cross_validation
 from similarities import generate_genres_similarities
 from feature_selection import select_best_features, load_best_features, save_best_features
 from classifier_trainer import train_classifier
@@ -31,6 +29,7 @@ def process_person(person_data):
     person, ratings, encoded_features, best_features_per_person = person_data
 
     if person not in best_features_per_person:
+        logging.info(f"Selecting best features for person {person}...")
         best_features, score = select_best_features(person, encoded_features, ratings)
         logging.info(f"Selected features for person {person}: {best_features} with score: {score}")
     else:
@@ -41,9 +40,9 @@ def process_person(person_data):
         for outer_k, inner in encoded_features.items()
     }
 
-    accuracy, classifier = train_classifier(person, filtered_features, ratings, find_best_k=True)
+    accuracy, soft_accuracy, classifier = train_classifier(person, filtered_features, ratings, find_best_k=True)
 
-    return person, best_features, accuracy, classifier
+    return person, best_features, accuracy, soft_accuracy, classifier
 
 
 if __name__ == '__main__':
@@ -57,6 +56,7 @@ if __name__ == '__main__':
     best_features_per_person = load_best_features()
     classifier_per_person = {}
     accuracy_per_person = []
+    soft_accuracy_per_person = []
 
     person_data_list = [(person, ratings, encoded_features, best_features_per_person) for person, ratings in ratings_per_person.items()]
 
@@ -64,13 +64,14 @@ if __name__ == '__main__':
         futures = [executor.submit(process_person, data) for data in person_data_list]
 
         for future in as_completed(futures):
-            person, best_features, accuracy, classifier = future.result()
+            person, best_features, accuracy, soft_accuracy, classifier = future.result()
             best_features_per_person[person] = best_features
             classifier_per_person[person] = classifier
             accuracy_per_person.append(accuracy)
+            soft_accuracy_per_person.append(soft_accuracy)
 
     save_best_features(best_features_per_person)
 
-    logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f}")
+    logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f}, soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
 
     RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, encoded_features, best_features_per_person)
