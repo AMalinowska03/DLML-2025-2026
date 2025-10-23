@@ -11,7 +11,6 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 from tmdb_client import TMDBClient
 
-similarities_csv = pd.read_csv("../data/genres.csv", sep=";", index_col='Name')
 
 
 def string_similarity(string1, string2, prefix_weight=0.7, prefix_percent=0.2):
@@ -185,11 +184,17 @@ feature_weights = {
 def process_similarity_full(feature_vector1, feature_vector2):
     total_similarity = 0.0
     count = 0
-    for key in feature_weights.keys():
-        if feature_weights[key] == 0:
-            score = 0
-        else:
-            count += 1
-            score = process_similarity(key, feature_vector1[key], feature_vector2[key])
-        total_similarity += score*feature_weights[key]
+    for key in feature_vector1.keys():
+        total_similarity += process_similarity(key, feature_vector1[key], feature_vector2[key])
+        # if feature_weights[key] == 0:
+        #     score = 0
+        # else:
+        #     count += 1
+        #     score = process_similarity(key, feature_vector1[key], feature_vector2[key])
+        # total_similarity += score*feature_weights[key]
     return total_similarity
+
+
+if(not os.path.exists('../data/genres.csv')):
+    generate_genres_similarities()
+similarities_csv = pd.read_csv("../data/genres.csv", sep=";", index_col='Name')
