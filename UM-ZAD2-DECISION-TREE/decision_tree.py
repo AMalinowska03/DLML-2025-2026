@@ -1,0 +1,112 @@
+from collections import Counter
+
+import numpy as np
+
+def is_list_of_lists(values):
+    return isinstance(values, list) and all(isinstance(v, list) for v in values)
+
+class DecisionNode:
+    def __init__(self, feature=None, threshold=None, left=None, right=None, *, value=None):
+        self.feature = feature
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.value = value  # leaf value
+
+
+class DecisionTree:
+    def __init__(self, max_depth=5, min_samples_split=2):
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.root = None
+
+    def fit(self, X, y):
+        self.root = self._grow_tree(X, y)
+
+    def predict(self, X):
+        return np.array([self.predict_single(row) for row in X])
+
+    def predict_single(self, row):
+        node = self.root
+        while node.value is None:
+            val = row[node.feature]
+            if isinstance(val, list):
+                go_left = node.threshold in val
+            else:
+                if isinstance(node.threshold, (int, float, np.number)):
+                    go_left = val <= node.threshold
+                else:
+                    go_left = val == node.threshold
+            node = node.left if go_left else node.right
+        return node.value
+
+    def _grow_tree(self, X, y, depth=0):
+        num_samples, num_features = len(X), len(X[0])
+        num_labels = len(np.unique(y))
+
+        if depth >= self.max_depth or num_labels == 1 or num_samples < self.min_samples_split:
+            leaf_value = Counter(y).most_common(1)[0][0]
+            return DecisionNode(value=leaf_value)
+
+        feature, thresh = self._best_split(X, y)
+        if feature is None:
+            leaf_value = Counter(y).most_common(1)[0][0]
+            return DecisionNode(value=leaf_value)
+
+        X_left, X_right, y_left, y_right = self._split(X, y, feature, thresh)
+
+        left = self._grow_tree(X_left, y_left, depth + 1)
+        right = self._grow_tree(X_right, y_right, depth + 1)
+        return DecisionNode(feature, thresh, left, right)
+
+    def _best_split(self, X, y):
+        best_feature, best_threshold, best_gain = None, None, 0
+        base_gini = self._gini(y)
+
+        for feature in X[0].keys():
+            unique_values = self.get_unique_values(X, feature)
+
+            for value in unique_values:
+                _, _, y_left, y_right = self._split(X, y, feature, value)
+                if len(y_left) == 0 or len(y_right) == 0:
+                    continue
+
+                gini_left = self._gini(y_left)
+                gini_right = self._gini(y_right)
+                weighted_gini = (len(y_left) * gini_left + len(y_right) * gini_right) / len(y)
+                gain = base_gini - weighted_gini
+
+                if gain > best_gain:
+                    best_feature, best_threshold, best_gain = feature, value, gain
+
+        return best_feature, best_threshold
+
+    def _gini(self, y):
+        counts = np.bincount(y)
+        probs = counts / len(y)
+        return 1 - np.sum(probs**2)
+
+    def get_unique_values(self, X, feature):
+        values = [features[feature] for features in X if feature in features]
+        if is_list_of_lists(values):
+            unique_values = np.unique([element for array in values for element in array])  # flatten
+        else:
+            unique_values = np.unique(values)
+        return unique_values
+
+    def _split(self, X, y, feature, thresh):
+        values = [features[feature] for features in X if feature in features]
+        if is_list_of_lists(values):
+            left_idx = np.array([thresh in v for v in values])
+        else:
+            if isinstance(thresh, (int, float, np.number)):
+                left_idx = values <= thresh
+            else:
+                left_idx = np.array([thresh == v for v in values])
+        right_idx = ~left_idx
+
+        X_left = [row for i, row in enumerate(X) if left_idx[i]]
+        y_left = [label for i, label in enumerate(y) if left_idx[i]]
+        X_right = [row for i, row in enumerate(X) if right_idx[i]]
+        y_right = [label for i, label in enumerate(y) if right_idx[i]]
+        return X_left, X_right, y_left, y_right
