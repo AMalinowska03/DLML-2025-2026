@@ -1,4 +1,5 @@
 from collections import Counter
+import random
 
 import numpy as np
 
@@ -15,9 +16,10 @@ class DecisionNode:
 
 
 class DecisionTree:
-    def __init__(self, max_depth=5, min_samples_split=2):
+    def __init__(self, max_depth=5, min_samples_split=2, features_number_to_compare=None):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
+        self.features_number_to_compare = features_number_to_compare
         self.root = None
 
     def fit(self, X, y):
@@ -63,7 +65,14 @@ class DecisionTree:
         best_feature, best_threshold, best_gain = None, None, 0
         base_gini = self._gini(y)
 
-        for feature in X[0].keys():
+        all_features = X[0].keys()
+        if self.features_number_to_compare is None:
+            chosen_features = all_features
+        else:
+            feature_number = min(self.features_number_to_compare, len(all_features))
+            chosen_features = random.sample(all_features, feature_number)
+
+        for feature in chosen_features:
             unique_values = self.get_unique_values(X, feature)
 
             for value in unique_values:
