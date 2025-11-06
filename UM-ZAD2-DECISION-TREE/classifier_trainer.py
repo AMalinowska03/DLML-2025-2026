@@ -4,7 +4,7 @@ from shared.cross_validation import cross_validation
 from decision_tree import DecisionTree
 from random_forest import RandomForest
 
-cross_validation_folds = 5
+cross_validation_folds = 6
 
 
 def train_classifier(person, features, person_ratings, is_forest=False):
@@ -16,7 +16,7 @@ def train_classifier(person, features, person_ratings, is_forest=False):
 
     classifier = RandomForest() if is_forest else DecisionTree()
 
-    accuracy, soft_accuracy = cross_validation(X, y, cross_validation_folds, classifier)
+    accuracy, soft_accuracy = cross_validation(X, y, cross_validation_folds, classifier, process_async=False)
 
     logging.info(f"Accuracy for person {person}: acc: {accuracy}, soft_acc: {soft_accuracy} - {classifier_type}")
 

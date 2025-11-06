@@ -2,6 +2,8 @@ from collections import Counter
 import random
 
 import numpy as np
+from fontTools.varLib.avar.plan import measureSlant
+
 
 def is_list_of_lists(values):
     return isinstance(values, list) and all(isinstance(v, list) for v in values)
@@ -16,11 +18,13 @@ class DecisionNode:
 
 
 class DecisionTree:
-    def __init__(self, max_depth=5, min_samples_split=2, features_number_to_compare=None):
+    def __init__(self, max_depth=5, min_samples_split=10, information_gain='gini', features_number_to_compare=None):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
+        self.min_gain = 0.01
         self.features_number_to_compare = features_number_to_compare
         self.root = None
+        self.information_gain = information_gain
 
     def fit(self, X, y):
         self.root = self._grow_tree(X, y)
@@ -63,14 +67,14 @@ class DecisionTree:
 
     def _best_split(self, X, y):
         best_feature, best_threshold, best_gain = None, None, 0
-        base_gini = self._gini(y)
+        base_measure = self._measure(y)
 
         all_features = X[0].keys()
         if self.features_number_to_compare is None:
             chosen_features = all_features
         else:
             feature_number = min(self.features_number_to_compare, len(all_features))
-            chosen_features = random.sample(all_features, feature_number)
+            chosen_features = random.sample(list(all_features), feature_number)
 
         for feature in chosen_features:
             unique_values = self.get_unique_values(X, feature)
@@ -80,20 +84,36 @@ class DecisionTree:
                 if len(y_left) == 0 or len(y_right) == 0:
                     continue
 
-                gini_left = self._gini(y_left)
-                gini_right = self._gini(y_right)
-                weighted_gini = (len(y_left) * gini_left + len(y_right) * gini_right) / len(y)
-                gain = base_gini - weighted_gini
+                measure_left = self._measure(y_left)
+                measure_right = self._measure(y_right)
+                weighted_measure = (len(y_left) * measure_left + len(y_right) * measure_right) / len(y)
+                gain = base_measure - weighted_measure
 
                 if gain > best_gain:
                     best_feature, best_threshold, best_gain = feature, value, gain
 
+        if best_gain < self.min_gain:
+            return None, None
+
         return best_feature, best_threshold
+
+    def _measure(self, y):
+        if self.information_gain == 'gini':
+            return self._gini(y)
+        elif self.information_gain == 'entropy':
+            return self._entropy(y)
+        else:
+            raise ValueError(f"Unknown measure: {self.information_gain}. Available: {'gini', 'entropy'}")
 
     def _gini(self, y):
         counts = np.bincount(y)
         probs = counts / len(y)
         return 1 - np.sum(probs**2)
+
+    def _entropy(self, y):
+        labels, counts = np.unique(y, return_counts=True)
+        probs = counts / counts.sum()
+        return -np.sum(probs * np.log2(probs + 1e-9))
 
     def get_unique_values(self, X, feature):
         values = [features[feature] for features in X if feature in features]

@@ -12,7 +12,8 @@ feature_extractors = {
     'runtime': lambda m: m['runtime'],
     'popularity': lambda m: m['popularity'],
     'revenue': lambda m: m['revenue'],
-    'actors': lambda m: [actor['name'] for actor in m['credits']['cast'] if actor['known_for_department'] == "Acting"]
+    'actors': lambda m: [cast['name'] for cast in m['credits']['cast'] if cast['known_for_department'] == "Acting" and cast['popularity'] > 1],
+    'spoken_languages': lambda m: [language['iso_639_1'] for language in m['spoken_languages']],
 }
 
 class FeatureExtractor:

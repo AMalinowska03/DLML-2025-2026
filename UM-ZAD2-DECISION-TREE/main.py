@@ -13,7 +13,6 @@ from tree_drawer import draw_tree_png
 features_to_extract = [
     'keywords',
     'genres',
-    'production_companies',
     'original_language',
     'budget',
     'release_date',
@@ -21,7 +20,8 @@ features_to_extract = [
     'runtime',
     'popularity',
     'revenue',
-    'actors'
+    'actors',
+    'spoken_languages'
 ]
 
 logging.basicConfig(
@@ -36,13 +36,22 @@ def process_person(person_data, is_forest=False):
     return person, accuracy, soft_accuracy, classifier
 
 
-def experiment(is_forest=False):
+def experiment(is_forest=False, process_async=False):
     classifier_type = "forest" if is_forest else "tree"
-    with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(process_person, data, is_forest) for data in person_data_list]
 
-        for future in as_completed(futures):
-            person, accuracy, soft_accuracy, classifier = future.result()
+    if process_async:
+        with ProcessPoolExecutor() as executor:
+            futures = [executor.submit(process_person, data, is_forest) for data in person_data_list]
+
+            for future in as_completed(futures):
+                person, accuracy, soft_accuracy, classifier = future.result()
+                classifier_per_person[person] = classifier
+                accuracy_per_person.append(accuracy)
+                soft_accuracy_per_person.append(soft_accuracy)
+
+    else:
+        for data in person_data_list:
+            person, accuracy, soft_accuracy, classifier = process_person(data, is_forest)
             classifier_per_person[person] = classifier
             accuracy_per_person.append(accuracy)
             soft_accuracy_per_person.append(soft_accuracy)
@@ -50,10 +59,10 @@ def experiment(is_forest=False):
     logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f}, soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
 
     if not is_forest:
-        draw_tree_png(classifier_per_person[481].root)
+        draw_tree_png(classifier_per_person[258].root)
 
     filename = f"submission_{classifier_type}"
-    RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, features)
+    RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, features, filename)
 
 
 if __name__ == '__main__':
@@ -68,6 +77,6 @@ if __name__ == '__main__':
 
     person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
 
-    experiment(False)  # tree
-    experiment(True)  # forest
+    # experiment(False, process_async=True)  # tree
+    experiment(True, process_async=True)  # forest
 

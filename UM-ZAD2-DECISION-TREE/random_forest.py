@@ -5,7 +5,7 @@ from collections import Counter
 import numpy as np
 
 class RandomForest:
-    def __init__(self, tree_number=50):
+    def __init__(self, tree_number=1):
         self.tree_number = tree_number
         self.trees = []
 
@@ -17,9 +17,8 @@ class RandomForest:
             self.trees.append(tree)
 
     def predict(self, X):
-        predictions = [tree.predict(X) for tree in self.trees]
-        final_predictions = []
-        for i in range(len(X)):
-            single_predictions = predictions[:, i] # predictions of each tree for single entry
-            final_predictions.append(Counter(single_predictions).most_common(1)[0][0])
-        return np.array(final_predictions)
+        return np.array([self.predict_single(row) for row in X])
+
+    def predict_single(self, row):
+        predictions = np.array([tree.predict_single(row) for tree in self.trees])
+        return Counter(predictions).most_common(1)[0][0]
