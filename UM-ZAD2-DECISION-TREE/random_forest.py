@@ -5,7 +5,7 @@ from collections import Counter
 import numpy as np
 
 class RandomForest:
-    def __init__(self, tree_number=1):
+    def __init__(self, tree_number=50):
         self.tree_number = tree_number
         self.trees = []
 

@@ -77,6 +77,6 @@ if __name__ == '__main__':
 
     person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
 
-    # experiment(False, process_async=True)  # tree
+    experiment(False, process_async=True)  # tree
     experiment(True, process_async=True)  # forest
 

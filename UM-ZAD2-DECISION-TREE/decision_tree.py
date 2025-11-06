@@ -18,10 +18,10 @@ class DecisionNode:
 
 
 class DecisionTree:
-    def __init__(self, max_depth=5, min_samples_split=10, information_gain='gini', features_number_to_compare=None):
+    def __init__(self, max_depth=5, min_samples_split=10, min_gain=0.01, information_gain='gini', features_number_to_compare=None):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
-        self.min_gain = 0.01
+        self.min_gain = min_gain
         self.features_number_to_compare = features_number_to_compare
         self.root = None
         self.information_gain = information_gain
