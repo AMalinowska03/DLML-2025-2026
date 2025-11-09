@@ -1,10 +1,14 @@
 from datetime import datetime
 
+import numpy as np
+
 feature_extractors = {
     'keywords': lambda m: [keyword['name'] for keyword in m['keywords']['keywords']],
     'genres': lambda m: [genre['name'] for genre in m['genres']],
     'production_companies': lambda m: [production_company['name'] for production_company in m['production_companies']],
+    'production_countries': lambda m: [production_country['iso_3166_1'] for production_country in m['production_countries']],
     'original_language': lambda m: m['original_language'],
+    'origin_country': lambda m: m['origin_country'],
     'budget': lambda m: m['budget'],
     'overview': lambda m: m['overview'],
     'release_date': lambda m: datetime.strptime(m['release_date'], '%Y-%m-%d').year,
@@ -13,6 +17,9 @@ feature_extractors = {
     'popularity': lambda m: m['popularity'],
     'revenue': lambda m: m['revenue'],
     'actors': lambda m: [cast['name'] for cast in m['credits']['cast'] if cast['known_for_department'] == "Acting" and cast['popularity'] > 1],
+    'main_character_gender': lambda m: 'female' if m['credits']['cast'][0]['gender'] == 1 else 'male',
+    'super_stars': lambda m: np.array([1 for cast in m['credits']['cast'] if cast['known_for_department'] == "Acting" and cast['popularity'] > 4.5], dtype=float).sum(),
+    'directors': lambda m: [cast['name'] for cast in m['credits']['cast'] if cast['known_for_department'] == "Directing" and cast['popularity'] > 1],
     'spoken_languages': lambda m: [language['iso_639_1'] for language in m['spoken_languages']],
 }
 

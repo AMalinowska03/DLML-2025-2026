@@ -14,6 +14,7 @@ features_to_extract = [
     'keywords',
     'genres',
     'original_language',
+    'origin_country',
     'budget',
     'release_date',
     'vote_average',
@@ -21,7 +22,11 @@ features_to_extract = [
     'popularity',
     'revenue',
     'actors',
-    'spoken_languages'
+    'super_stars',
+    'main_character_gender',
+    'directors',
+    'spoken_languages',
+    'production_companies'
 ]
 
 logging.basicConfig(
@@ -36,30 +41,23 @@ def process_person(person_data, is_forest=False):
     return person, accuracy, soft_accuracy, classifier
 
 
-def experiment(is_forest=False, process_async=False):
+def experiment(is_forest=False):
     classifier_type = "forest" if is_forest else "tree"
 
-    if process_async:
-        with ProcessPoolExecutor() as executor:
-            futures = [executor.submit(process_person, data, is_forest) for data in person_data_list]
+    with ProcessPoolExecutor() as executor:
+        futures = [executor.submit(process_person, data, is_forest) for data in person_data_list]
 
-            for future in as_completed(futures):
-                person, accuracy, soft_accuracy, classifier = future.result()
-                classifier_per_person[person] = classifier
-                accuracy_per_person.append(accuracy)
-                soft_accuracy_per_person.append(soft_accuracy)
-
-    else:
-        for data in person_data_list:
-            person, accuracy, soft_accuracy, classifier = process_person(data, is_forest)
+        for idx, future in enumerate(as_completed(futures)):
+            person, accuracy, soft_accuracy, classifier = future.result()
             classifier_per_person[person] = classifier
             accuracy_per_person.append(accuracy)
             soft_accuracy_per_person.append(soft_accuracy)
+            logging.info(f"Processed - {idx + 1}/{len(person_data_list)} | Person: {person}, accuracy: {accuracy}, soft_accuracy: {soft_accuracy} - {classifier_type}")
 
-    logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f}, soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
+    logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f},  soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
 
     if not is_forest:
-        draw_tree_png(classifier_per_person[258].root)
+        draw_tree_png(classifier_per_person[169].root, filename=f"tree.png")
 
     filename = f"submission_{classifier_type}"
     RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, features, filename)
@@ -77,6 +75,6 @@ if __name__ == '__main__':
 
     person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
 
-    experiment(False, process_async=True)  # tree
-    experiment(True, process_async=True)  # forest
+    experiment(False)  # tree
+    # experiment(True)  # forest
 

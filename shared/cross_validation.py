@@ -1,7 +1,6 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 
 import numpy as np
-from collections import defaultdict
 from sklearn.metrics import accuracy_score
 
 def soft_accuracy(y_true, y_pred, tolerance=1):
@@ -36,12 +35,14 @@ def evaluate_fold(fold, folds_X, folds_y, k_folds, classifier):
     y_train = np.concatenate([folds_y[i] for i in range(k_folds) if i != fold])
 
     classifier.fit(X_train, y_train)
+    if not classifier.is_forest:
+        classifier.prune(X_val, y_val)
     y_pred = classifier.predict(X_val)
 
     return accuracy_score(y_val, y_pred), soft_accuracy(y_val, y_pred)
 
 
-def cross_validation(X, y, k_folds, classifier, process_async=False):
+def cross_validation(X, y, k_folds, classifier):
     X, y = np.array(X), np.array(y)
 
     folds_X, folds_y = stratified_split(X, y, k_folds)
@@ -49,19 +50,9 @@ def cross_validation(X, y, k_folds, classifier, process_async=False):
     accuracies = []
     soft_accuracies = []
 
-    if process_async:
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(evaluate_fold, fold, folds_X, folds_y, k_folds, classifier): fold for fold in range(k_folds)}
-
-            for future in as_completed(futures):
-                acc, soft_acc = future.result()
-                accuracies.append(acc)
-                soft_accuracies.append(soft_acc)
-
-    else:
-        for fold in range(k_folds):
-            acc, soft_acc = evaluate_fold(fold, folds_X, folds_y, k_folds, classifier)
-            accuracies.append(acc)
-            soft_accuracies.append(soft_acc)
+    for fold in range(k_folds):
+        acc, soft_acc = evaluate_fold(fold, folds_X, folds_y, k_folds, classifier)
+        accuracies.append(acc)
+        soft_accuracies.append(soft_acc)
 
     return np.mean(accuracies).tolist(), np.mean(soft_accuracies).tolist()
