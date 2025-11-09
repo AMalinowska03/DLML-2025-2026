@@ -57,7 +57,7 @@ def experiment(is_forest=False):
     logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f},  soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
 
     if not is_forest:
-        draw_tree_png(classifier_per_person[169].root, filename=f"tree.png")
+        draw_tree_png(classifier_per_person[1102].root, filename=f"tree.png")
 
     filename = f"submission_{classifier_type}"
     RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, features, filename)
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     accuracy_per_person = []
     soft_accuracy_per_person = []
 
-    person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
+    person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items() if person == 1102]
 
     experiment(False)  # tree
     # experiment(True)  # forest
