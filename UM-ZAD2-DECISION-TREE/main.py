@@ -73,8 +73,8 @@ if __name__ == '__main__':
     accuracy_per_person = []
     soft_accuracy_per_person = []
 
-    person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items() if person == 1102]
+    person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
 
     experiment(False)  # tree
-    # experiment(True)  # forest
+    experiment(True)  # forest
 
