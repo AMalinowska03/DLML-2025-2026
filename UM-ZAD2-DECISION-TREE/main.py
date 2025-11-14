@@ -52,12 +52,12 @@ def experiment(is_forest=False):
             classifier_per_person[person] = classifier
             accuracy_per_person.append(accuracy)
             soft_accuracy_per_person.append(soft_accuracy)
-            logging.info(f"Processed - {idx + 1}/{len(person_data_list)} | Person: {person}, accuracy: {accuracy}, soft_accuracy: {soft_accuracy} - {classifier_type}")
+            logging.info(f"Processed - {idx + 1}/{len(person_data_list)} | Person: {person}, accuracy: {accuracy}, soft_accuracy: {soft_accuracy}, depth: {classifier.depth()} - {classifier_type}")
 
     logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f},  soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
 
     if not is_forest:
-        draw_tree_png(classifier_per_person[1102].root, filename=f"tree.png")
+        draw_tree_png(classifier_per_person[92].root, filename=f"tree.png")
 
     filename = f"submission_{classifier_type}"
     RatingPrediction('../data/task.csv').submit_ratings_predictions(classifier_per_person, features, filename)
