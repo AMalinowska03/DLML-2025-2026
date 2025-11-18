@@ -17,9 +17,10 @@ def calculate_pearson_similarity(user_a_id, user_b_id, user_ratings, min_common_
     ratings_b = [user_ratings[user_b_id][movie] for movie in common_movies]
 
     # korelacja pearsona:
-    corr = np.corrcoef(ratings_a, ratings_b)[0, 1]
-    if np.isnan(corr):
-        return 0
+    if len(np.unique(ratings_a)) == 1 or len(np.unique(ratings_b)) == 1: # no correlation if all ratings are the same
+        corr = 0
+    else:
+        corr = np.corrcoef(ratings_a, ratings_b)[0, 1]
 
     return corr
 
@@ -58,7 +59,7 @@ class CollaborativeFiltering:
                 rates = list(ratings_dict.values())
                 self.average_ratings[user_id] = np.mean(rates)
 
-    def predict(self, user_id, movie_id, k=10):
+    def predict(self, user_id, movie_id, k=5):
         if len(self.user_similarities) == 0:
             self.calculate_similarities()
         if len(self.average_ratings) == 0:
@@ -67,7 +68,7 @@ class CollaborativeFiltering:
         if user_id not in self.user_similarities:
             return None
         if movie_id in self.users_ratings[user_id]:
-            return self.user_similarities[user_id][movie_id]
+            return self.users_ratings[user_id][movie_id]
 
         neighbors = []  # users that watched that movie
         for other_user_id, movie_ratings in self.users_ratings.items():

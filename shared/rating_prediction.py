@@ -12,9 +12,9 @@ class RatingPrediction:
             self.ratings.at[idx, 3] = str(classifiers_per_person[person].predict_single(features[movie]))
         self.ratings.to_csv(f"./{filename}.csv", sep=';', index=False, header=False)
 
-    def submit_ratings_predictions_no_features(self, classifiers_per_person, filename="submission"):
+    def submit_ratings_predictions_no_features(self, classifier, filename="submission"):
         for idx, rating in self.ratings.iterrows():
             person = rating[1]
             movie = rating[2]
-            self.ratings.at[idx, 3] = str(classifiers_per_person[person].predict(person, movie))
+            self.ratings.at[idx, 3] = str(classifier.predict(person, movie))
         self.ratings.to_csv(f"./{filename}.csv", sep=';', index=False, header=False)
