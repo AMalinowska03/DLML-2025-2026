@@ -35,6 +35,7 @@ def cross_validation(users_ratings, k_folds=6, k_neighbors=20, min_common_movies
 
     fold_accuracies = []
     fold_soft_accuracies = []
+    classifier_per_person = {}
 
     for i in range(k_folds):
         val_set_tuples = folds_X[i]
@@ -65,6 +66,7 @@ def cross_validation(users_ratings, k_folds=6, k_neighbors=20, min_common_movies
             logging.info(f"Person: {u}; movie: {m}; rating: {true_rating}, prediction: {prediction}")
             y_true.append(true_rating)
             y_pred.append(prediction)
+            classifier_per_person[u] = predictor
 
         if y_true:
             fold_acc = accuracy_score(y_true, y_pred)
@@ -77,4 +79,4 @@ def cross_validation(users_ratings, k_folds=6, k_neighbors=20, min_common_movies
     mean_soft_accuracy = np.mean(fold_soft_accuracies) if fold_soft_accuracies else 0
     logging.info(f"Average accuracy: {mean_accuracy}:.2f   Average soft accuracy: {mean_soft_accuracy}:.2f")
 
-    return mean_accuracy, mean_soft_accuracy
+    return mean_accuracy, mean_soft_accuracy, classifier_per_person
