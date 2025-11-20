@@ -76,6 +76,7 @@ class CollaborativeFiltering:
                 similarity = self.user_similarities[user_id][other_user_id]
 
                 if similarity > 0:
+                    similarity **= 3
                     neighbor_avg_rating = self.average_ratings[other_user_id]
                     neighbor_rating = self.users_ratings[other_user_id][movie_id]
                     deviation = neighbor_rating - neighbor_avg_rating
