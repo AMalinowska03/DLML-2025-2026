@@ -17,7 +17,7 @@ def calculate_pearson_similarity(user_a_id, user_b_id, user_ratings, min_common_
     ratings_b = [user_ratings[user_b_id][movie] for movie in common_movies]
 
     # korelacja pearsona:
-    if len(np.unique(ratings_a)) == 1 or len(np.unique(ratings_b)) == 1: # no correlation if all ratings are the same
+    if len(np.unique(ratings_a)) == 1 or len(np.unique(ratings_b)) == 1:  # no correlation if all ratings are the same
         corr = 0
     else:
         corr = np.corrcoef(ratings_a, ratings_b)[0, 1]
@@ -95,6 +95,6 @@ class CollaborativeFiltering:
         for similarity, deviation in top_k_neighbors:
             nominator += similarity * deviation
             denominator += abs(similarity)
-        predicted_rating += nominator/denominator
+        predicted_rating += nominator / denominator
 
-        return int(round(predicted_rating))
+        return max(0, min(5, int(round(predicted_rating))))
