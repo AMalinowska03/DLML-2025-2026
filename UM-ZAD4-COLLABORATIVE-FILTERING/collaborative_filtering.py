@@ -22,44 +22,48 @@ class CollaborativeFiltering:
         self.user_biases = np.zeros(self.num_users)
         self.movie_biases = np.zeros(self.num_movies)
 
+        self.flattened_ratings = [
+            (self.users_dict[u], self.movies_dict[m], rating)
+            for u, ratings in self.users_ratings.items()
+            for m, rating in ratings.items()
+        ]
+
     def train(self, epoch=100):
-        self.U = np.random.rand(self.num_users, self.num_factors)
-        self.M = np.random.rand(self.num_movies, self.num_factors)
+        self.U = np.random.normal(scale=1. / self.num_factors, size=(self.num_users, self.num_factors))
+        self.M = np.random.normal(scale=1. / self.num_factors, size=(self.num_movies, self.num_factors))
 
         for epoch_num in range(epoch):
-            for user_id, ratings_dict in self.users_ratings.items():
-                for movie_id, rating in ratings_dict.items():
-                    u = self.users_dict[user_id]
-                    m = self.movies_dict[movie_id]
+            np.random.shuffle(self.flattened_ratings)
+            for user_idx, movie_idx, rating in self.flattened_ratings:
+                u_vec = self.U[user_idx]
+                m_vec = self.M[movie_idx]
 
-                    prediction = self.predict_raw(user_id, movie_id)
-                    error = rating - prediction
+                prediction = self.predict_raw(user_idx, movie_idx)
+                error = rating - prediction
 
-                    u_vec = self.U[u]
-                    m_vec = self.M[m]
+                self.U[user_idx] += self.learning_rate * (error * m_vec - self.regularization_strength * u_vec)
+                self.M[movie_idx] += self.learning_rate * (error * u_vec - self.regularization_strength * m_vec)
+                self.user_biases[user_idx] += self.learning_rate * (error - self.regularization_strength * self.user_biases[user_idx])
+                self.movie_biases[movie_idx] += self.learning_rate * (error - self.regularization_strength * self.movie_biases[movie_idx])
 
-                    self.U[u] += self.learning_rate * (error * m_vec - self.regularization_strength * u_vec)
-                    self.M[m] += self.learning_rate * (error * u_vec - self.regularization_strength * m_vec)
-                    self.user_biases[u] += self.learning_rate * (error - self.regularization_strength * self.user_biases[u])
-                    self.movie_biases[m] += self.learning_rate * (error - self.regularization_strength * self.movie_biases[m])
+            logging.info(f"Epoch {epoch_num} loss: {self.compute_rmse()}")
 
-            logging.info(f"Epoch {epoch_num} loss: {self.compute_mse()}")
-
-    def predict_raw(self, user_id, movie_id):
-        u = self.users_dict[user_id]
-        m = self.movies_dict[movie_id]
+    def predict_raw(self, user_idx, movie_idx):
         return (self.global_bias
-                + self.user_biases[u]
-                + self.movie_biases[m]
-                + np.dot(self.U[u], self.M[m]))
+                + self.user_biases[user_idx]
+                + self.movie_biases[movie_idx]
+                + np.dot(self.U[user_idx], self.M[movie_idx]))
 
     def predict(self, user_id, movie_id):
-        pred = self.predict_raw(user_id, movie_id)
+        user_idx = self.users_dict[user_id]
+        movie_idx = self.movies_dict[movie_id]
+        pred = self.predict_raw(user_idx, movie_idx)
         return max(0, min(5, int(round(pred))))
 
-    def compute_mse(self):
+    def compute_rmse(self):
         error = 0
-        for user_id, ratings_dict in self.users_ratings.items():
-            for movie_id, rating in ratings_dict.items():
-                error += (rating - self.predict_raw(user_id, movie_id)) ** 2
-        return np.sqrt(error)
+        count = 0
+        for user_id, movie_id, rating in self.flattened_ratings:
+            error += (rating - self.predict_raw(user_id, movie_id)) ** 2
+            count += 1
+        return np.sqrt(error / count)

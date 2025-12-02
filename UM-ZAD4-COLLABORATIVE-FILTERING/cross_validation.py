@@ -38,10 +38,12 @@ def evaluate_fold(fold, folds_X, folds_y):
         y_true.append(true_rating)
         y_pred.append(prediction)
 
+    logging.info(f"Fold {fold} rmse: {compute_rmse(y_true, y_pred)}")
+
     return accuracy_score(y_true, y_pred), soft_accuracy(y_true, y_pred)
 
 
-def cross_validation(users_ratings, k_folds=20):
+def cross_validation(users_ratings, k_folds=15):
     X = []
     y = []
     for user_id, ratings in users_ratings.items():
@@ -62,3 +64,10 @@ def cross_validation(users_ratings, k_folds=20):
             soft_accuracies.append(soft_acc)
 
     return np.mean(accuracies).tolist(), np.mean(soft_accuracies).tolist()
+
+
+def compute_rmse(y_true, y_pred):
+    error = []
+    for i in range(len(y_true)):
+        error.append((y_true[i] - y_pred[i]) ** 2)
+    return np.sqrt(np.mean(error))
