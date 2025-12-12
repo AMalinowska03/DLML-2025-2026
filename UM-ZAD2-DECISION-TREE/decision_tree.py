@@ -193,7 +193,7 @@ class DecisionTree:
                 acc_after = np.mean(y_pred_after == y_val)
 
                 # if pruning hurt accuracy, revert
-                if acc_after <= acc_before:
+                if acc_after < acc_before:
                     node.value = None
                     node.left = left
                     node.right = right

@@ -62,7 +62,10 @@ def experiment(is_forest=False):
     logging.info(f"TRAIN - Accuracy per person (mean): {np.mean(train_accuracy_per_person):.4f},  soft_accuracy per person (mean): {np.mean(train_soft_accuracy_per_person):.4f}")
     logging.info(f"VALIDATE - Accuracy per person (mean): {np.mean(val_accuracy_per_person):.4f},  soft_accuracy per person (mean): {np.mean(val_soft_accuracy_per_person):.4f}")
 
-    if not is_forest:
+    if is_forest:
+        for i in range(5, 10):
+            draw_tree_png(classifier_per_person[530].trees[i].root, filename=f"forest_tree_{i}.png")
+    else:
         draw_tree_png(classifier_per_person[92].root, filename=f"tree.png")
 
     filename = f"submission_{classifier_type}"
@@ -81,7 +84,7 @@ if __name__ == '__main__':
     val_accuracy_per_person = []
     val_soft_accuracy_per_person = []
 
-    person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
+    person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items() if person == 530]
 
     experiment(False)  # tree
     experiment(True)  # forest
