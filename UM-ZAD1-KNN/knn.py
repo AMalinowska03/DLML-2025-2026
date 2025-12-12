@@ -2,10 +2,14 @@ import numpy as np
 from similarities import process_similarity_full
 
 class KnnClassifier():
-    def __init__(self, k, data, data_labels):
+    def __init__(self, k):
         self.k = k
-        self.data = data
-        self.data_labels = data_labels
+        self.data = None
+        self.data_labels = None
+
+    def fit(self, data, data_labels):
+        self.data = np.array(data)
+        self.data_labels = np.array(data_labels)
 
     def predict(self, X):
         return [self.predict_single(x) for x in X]

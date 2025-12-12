@@ -17,7 +17,7 @@ def train_classifier(person, features, person_ratings, is_forest=False):
 
     classifier = RandomForest() if is_forest else DecisionTree()
 
-    accuracy, soft_accuracy = cross_validation(X, y, cross_validation_folds, classifier)
+    train_accuracy, train_soft_accuracy, val_accuracy, val_soft_accuracy = cross_validation(X, y, cross_validation_folds, classifier)
 
     X_train, X_test, y_train, y_test = train_test_split_stratified(X, y, 0.2)
 
@@ -27,4 +27,4 @@ def train_classifier(person, features, person_ratings, is_forest=False):
 
     logging.debug(f"Classifier {classifier_type} for person {person} trained.")
 
-    return accuracy, soft_accuracy, classifier
+    return train_accuracy, train_soft_accuracy, val_accuracy, val_soft_accuracy, classifier

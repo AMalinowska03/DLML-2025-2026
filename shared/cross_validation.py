@@ -35,11 +35,13 @@ def evaluate_fold(fold, folds_X, folds_y, k_folds, classifier):
     y_train = np.concatenate([folds_y[i] for i in range(k_folds) if i != fold])
 
     classifier.fit(X_train, y_train)
-    if not classifier.is_forest:
+    if hasattr(classifier, "is_forest") and not classifier.is_forest:
         classifier.prune(X_val, y_val)
-    y_pred = classifier.predict(X_val)
+    y_val_pred = classifier.predict(X_val)
+    y_train_pred = classifier.predict(X_train)
 
-    return accuracy_score(y_val, y_pred), soft_accuracy(y_val, y_pred)
+    return (accuracy_score(y_train, y_train_pred), soft_accuracy(y_train, y_train_pred),
+            accuracy_score(y_val, y_val_pred), soft_accuracy(y_val, y_val_pred))
 
 
 def cross_validation(X, y, k_folds, classifier):
@@ -47,12 +49,15 @@ def cross_validation(X, y, k_folds, classifier):
 
     folds_X, folds_y = stratified_split(X, y, k_folds)
 
-    accuracies = []
-    soft_accuracies = []
-
+    train_accuracies = []
+    train_soft_accuracies = []
+    val_accuracies = []
+    val_soft_accuracies = []
     for fold in range(k_folds):
-        acc, soft_acc = evaluate_fold(fold, folds_X, folds_y, k_folds, classifier)
-        accuracies.append(acc)
-        soft_accuracies.append(soft_acc)
+        train_acc, train_soft_acc, val_acc, val_soft_acc = evaluate_fold(fold, folds_X, folds_y, k_folds, classifier)
+        train_accuracies.append(train_acc)
+        train_soft_accuracies.append(train_soft_acc)
+        val_accuracies.append(val_acc)
+        val_soft_accuracies.append(val_soft_acc)
 
-    return np.mean(accuracies).tolist(), np.mean(soft_accuracies).tolist()
+    return np.mean(train_accuracies), np.mean(train_soft_accuracies), np.mean(val_accuracies), np.mean(val_soft_accuracies)

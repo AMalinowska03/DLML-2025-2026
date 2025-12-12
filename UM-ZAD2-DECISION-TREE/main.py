@@ -37,8 +37,8 @@ logging.basicConfig(
 
 def process_person(person_data, is_forest=False):
     person, ratings, features = person_data
-    accuracy, soft_accuracy, classifier = train_classifier(person, features, ratings, is_forest)
-    return person, accuracy, soft_accuracy, classifier
+    train_accuracy, train_soft_accuracy, val_accuracy, val_soft_accuracy, classifier = train_classifier(person, features, ratings, is_forest)
+    return person, train_accuracy, train_soft_accuracy, val_accuracy, val_soft_accuracy, classifier
 
 
 def experiment(is_forest=False):
@@ -48,13 +48,19 @@ def experiment(is_forest=False):
         futures = [executor.submit(process_person, data, is_forest) for data in person_data_list]
 
         for idx, future in enumerate(as_completed(futures)):
-            person, accuracy, soft_accuracy, classifier = future.result()
+            person, train_accuracy, train_soft_accuracy, val_accuracy, val_soft_accuracy, classifier = future.result()
             classifier_per_person[person] = classifier
-            accuracy_per_person.append(accuracy)
-            soft_accuracy_per_person.append(soft_accuracy)
-            logging.info(f"Processed - {idx + 1}/{len(person_data_list)} | Person: {person}, accuracy: {accuracy}, soft_accuracy: {soft_accuracy}, depth: {classifier.depth()} - {classifier_type}")
+            train_accuracy_per_person.append(train_accuracy)
+            train_soft_accuracy_per_person.append(train_soft_accuracy)
+            val_accuracy_per_person.append(val_accuracy)
+            val_soft_accuracy_per_person.append(val_soft_accuracy)
+            logging.info(f"Processed - {idx + 1}/{len(person_data_list)} | Person: {person}, "
+                         f"train_accuracy: {train_accuracy}, train_soft_accuracy: {train_soft_accuracy} "
+                         f"val_accuracy: {val_accuracy}, val_soft_accuracy: {val_soft_accuracy} "
+                         f"- {classifier_type}")
 
-    logging.info(f"Accuracy per person (mean): {np.mean(accuracy_per_person):.2f},  soft_accuracy per person (mean): {np.mean(soft_accuracy_per_person):.2f}")
+    logging.info(f"TRAIN - Accuracy per person (mean): {np.mean(train_accuracy_per_person):.4f},  soft_accuracy per person (mean): {np.mean(train_soft_accuracy_per_person):.4f}")
+    logging.info(f"VALIDATE - Accuracy per person (mean): {np.mean(val_accuracy_per_person):.4f},  soft_accuracy per person (mean): {np.mean(val_soft_accuracy_per_person):.4f}")
 
     if not is_forest:
         draw_tree_png(classifier_per_person[92].root, filename=f"tree.png")
@@ -70,8 +76,10 @@ if __name__ == '__main__':
     features = FeatureExtractor(features_to_extract).extract(movies)
 
     classifier_per_person = {}
-    accuracy_per_person = []
-    soft_accuracy_per_person = []
+    train_accuracy_per_person = []
+    train_soft_accuracy_per_person = []
+    val_accuracy_per_person = []
+    val_soft_accuracy_per_person = []
 
     person_data_list = [(person, ratings, features) for person, ratings in ratings_per_person.items()]
 

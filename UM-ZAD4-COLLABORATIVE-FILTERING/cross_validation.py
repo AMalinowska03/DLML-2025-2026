@@ -1,7 +1,6 @@
 from collections import defaultdict
 
 import numpy as np
-import logging
 from sklearn.metrics import accuracy_score
 
 
@@ -28,17 +27,21 @@ def evaluate_fold(fold, folds_X, folds_y):
     classifier = CollaborativeFiltering(users_ratings=temp_user_ratings)
     classifier.train()
 
+    train_accuracy, train_soft_accuracy = _calculate_accuracy(classifier, X_train, y_train)
+    val_accuracy, val_soft_accuracy = _calculate_accuracy(classifier, X_val, y_val)
+
+    return train_accuracy, train_soft_accuracy, val_accuracy, val_soft_accuracy
+
+
+def _calculate_accuracy(classifier, X, y):
     y_true = []
     y_pred = []
-    for index, (user, movie) in enumerate(X_val):
-        u, m, true_rating = int(user), int(movie), int(y_val[index])
+    for index, (user, movie) in enumerate(X):
+        u, m, true_rating = int(user), int(movie), int(y[index])
 
         prediction = classifier.predict(u, m)
-        logging.info(f"Person: {u}; movie: {m}; rating: {true_rating}, prediction: {prediction}")
         y_true.append(true_rating)
         y_pred.append(prediction)
-
-    logging.info(f"Fold {fold} rmse: {compute_rmse(y_true, y_pred)}")
 
     return accuracy_score(y_true, y_pred), soft_accuracy(y_true, y_pred)
 
@@ -53,17 +56,21 @@ def cross_validation(users_ratings, k_folds=15):
 
     folds_X, folds_y = stratified_split(np.array(X), np.array(y), k_folds)
 
-    accuracies = []
-    soft_accuracies = []
+    train_accuracies = []
+    train_soft_accuracies = []
+    val_accuracies = []
+    val_soft_accuracies = []
     with ProcessPoolExecutor() as executor:
         futures = [executor.submit(evaluate_fold, fold, folds_X, folds_y) for fold in range(k_folds)]
 
         for future in as_completed(futures):
-            acc, soft_acc = future.result()
-            accuracies.append(acc)
-            soft_accuracies.append(soft_acc)
+            train_acc, train_soft_acc, val_acc, val_soft_acc = future.result()
+            train_accuracies.append(train_acc)
+            train_soft_accuracies.append(train_soft_acc)
+            val_accuracies.append(val_acc)
+            val_soft_accuracies.append(val_soft_acc)
 
-    return np.mean(accuracies).tolist(), np.mean(soft_accuracies).tolist()
+    return np.mean(train_accuracies).tolist(), np.mean(train_soft_accuracies).tolist(), np.mean(val_accuracies).tolist(), np.mean(val_soft_accuracies).tolist()
 
 
 def compute_rmse(y_true, y_pred):

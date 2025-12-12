@@ -4,12 +4,11 @@ import numpy as np
 import logging
 from sklearn.metrics import accuracy_score
 
-
 from shared.cross_validation import soft_accuracy, stratified_split
 from collaborative_filtering import CollaborativeFiltering
 
 
-def cross_validation(users_ratings, k_folds=20, k_neighbors=20, min_common_movies=5, tolerance=1):
+def cross_validation(users_ratings, k_folds=20, min_common_movies=5):
     """
     Przeprowadza pełną k-krotną walidację krzyżową dla modelu CF.
 
@@ -33,8 +32,10 @@ def cross_validation(users_ratings, k_folds=20, k_neighbors=20, min_common_movie
 
     folds_X, _ = stratified_split(np.array(all_ratings_tuples), np.array(y_labels), k_folds)
 
-    fold_accuracies = []
-    fold_soft_accuracies = []
+    train_accuracies = []
+    train_soft_accuracies = []
+    val_accuracies = []
+    val_soft_accuracies = []
 
     for i in range(k_folds):
         val_set_tuples = folds_X[i]
@@ -55,26 +56,31 @@ def cross_validation(users_ratings, k_folds=20, k_neighbors=20, min_common_movie
         predictor.calculate_average_ratings()
         predictor.calculate_similarities(min_common_movies)
 
-        y_true = []
-        y_pred = []
+        train_accuracy, train_soft_accuracy = _calculate_accuracy(predictor, train_set_list)
+        val_accuracy, val_soft_accuracy = _calculate_accuracy(predictor, val_set_tuples)
 
-        for user, movie, true_rating in val_set_tuples:
-            u, m, true_rating = int(user), int(movie), int(true_rating)
+        train_accuracies.append(train_accuracy)
+        train_soft_accuracies.append(train_soft_accuracy)
+        val_accuracies.append(val_accuracy)
+        val_soft_accuracies.append(val_soft_accuracy)
 
-            prediction = predictor.predict(u, m, k_neighbors)
-            logging.info(f"Person: {u}; movie: {m}; rating: {true_rating}, prediction: {prediction}")
-            y_true.append(true_rating)
-            y_pred.append(prediction)
+    mean_train_accuracy = np.mean(train_accuracies) if train_accuracies else 0
+    mean_train_soft_accuracy = np.mean(train_soft_accuracies) if train_soft_accuracies else 0
+    mean_val_accuracy = np.mean(val_accuracies) if val_accuracies else 0
+    mean_val_soft_accuracy = np.mean(val_soft_accuracies) if val_soft_accuracies else 0
 
-        if y_true:
-            fold_acc = accuracy_score(y_true, y_pred)
-            fold_soft_acc = soft_accuracy(y_true, y_pred, tolerance=tolerance)
+    logging.info(f"TRAIN - Average accuracy: {mean_train_accuracy:.4f}   Average soft accuracy: {mean_train_soft_accuracy:.4f}")
+    logging.info(f"VALIDATE - Average accuracy: {mean_val_accuracy:.4f}   Average soft accuracy: {mean_val_soft_accuracy:.4f}")
 
-            fold_accuracies.append(fold_acc)
-            fold_soft_accuracies.append(fold_soft_acc)
 
-    mean_accuracy = np.mean(fold_accuracies) if fold_accuracies else 0
-    mean_soft_accuracy = np.mean(fold_soft_accuracies) if fold_soft_accuracies else 0
-    logging.info(f"Average accuracy: {mean_accuracy:.2f}   Average soft accuracy: {mean_soft_accuracy:.2f}")
+def _calculate_accuracy(classifier, val_set_tuples):
+    y_true = []
+    y_pred = []
+    for user, movie, true_rating in val_set_tuples:
+        u, m, true_rating = int(user), int(movie), int(true_rating)
 
-    return mean_accuracy, mean_soft_accuracy
+        prediction = classifier.predict(u, m)
+        y_true.append(true_rating)
+        y_pred.append(prediction)
+
+    return accuracy_score(y_true, y_pred), soft_accuracy(y_true, y_pred)
