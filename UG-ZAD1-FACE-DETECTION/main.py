@@ -6,9 +6,11 @@ from LightningModel import LightningModel
 from GenderCNN import GenderCNN
 from EyeglassesResNet import EyeglassesResNet
 
-from data_loaders import train_gender, train_glass, \
+from data_loaders import (train_gender, train_glass, \
     train_loader_gender, val_loader_gender, test_loader_gender, \
-    train_loader_glass, val_loader_glass, test_loader_glass
+    train_loader_glass, val_loader_glass, test_loader_glass)
+
+torch.set_float32_matmul_precision("high")
 
 if __name__ == "__main__":
     gender_pos_weight = train_gender.pos_weight()
@@ -25,7 +27,8 @@ if __name__ == "__main__":
             mode="min"
         )],
         accelerator="auto",
-        devices="auto"
+        devices="auto",
+        precision=32,
     )
 
     trainer.fit(gender_model, train_loader_gender, val_loader_gender)
