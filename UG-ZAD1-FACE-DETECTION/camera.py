@@ -11,22 +11,22 @@ from models.EyeglassesResNet import EyeglassesResNet
 from datasets.transforms import cnn_val_tf, resnet_train_tf
 
 
-male_ckpt = "../lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
-glasses_ckpt = "../lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
+glasses_ckpt = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
 
 male_model = LightningModel.load_from_checkpoint(
     male_ckpt,
     model=GenderCNN(),
     pos_weight=torch.tensor(1.0)
 )
-male_model.eval().cuda()
+male_model.eval()
 
 glasses_model = LightningModel.load_from_checkpoint(
     glasses_ckpt,
     model=EyeglassesResNet(),
     pos_weight=torch.tensor(1.0)
 )
-glasses_model.eval().cuda()
+glasses_model.eval()
 
 
 def draw_labels(frame, boxes, labels):
@@ -36,8 +36,8 @@ def draw_labels(frame, boxes, labels):
 
 
 def predict_patch(patch):
-    male_x = cnn_val_tf(patch).unsqueeze(0).cuda()
-    glasses_x = resnet_train_tf(patch).unsqueeze(0).cuda()
+    male_x = cnn_val_tf(patch).unsqueeze(0)
+    glasses_x = resnet_train_tf(patch).unsqueeze(0)
 
     with torch.no_grad():
         male_logit = male_model(male_x).squeeze(1)
@@ -47,6 +47,16 @@ def predict_patch(patch):
 
     return male_prob > 0.5, glasses_prob > 0.5
 
+def expand_box(x, y, w, h, img_w, img_h, margin=1):
+    pad_w = int(w * margin)
+    pad_h = int(h * margin)
+
+    x1 = max(0, x - pad_w)
+    y1 = max(0, y - pad_h)
+    x2 = min(img_w, x + w + pad_w)
+    y2 = min(img_h, y + h + pad_h)
+
+    return x1, y1, x2 - x1, y2 - y1
 
 def detect(frame, detector):
     detections = detector.detect_multi_scale(img=frame, scale_factor=1.2, step_ratio=1,
@@ -65,7 +75,6 @@ def draw(frame, boxes):
     for x, y, w, h in boxes:
         frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
 
-
 if __name__ == '__main__':
     # file = lbp_frontal_face_cascade_filename()
     file = "face.xml"
@@ -82,6 +91,8 @@ if __name__ == '__main__':
 
         labels = []
         for (x, y, w, h) in boxes:
+            h_img, w_img, _ = frame.shape
+            x, y, w, h = expand_box(x, y, w, h, w_img, h_img)
             patch = Image.fromarray(frame[y:y + h, x:x + w])
             labels.append(predict_patch(patch))
 

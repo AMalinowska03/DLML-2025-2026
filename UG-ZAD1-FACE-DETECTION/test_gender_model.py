@@ -14,8 +14,7 @@ gender_model = LightningModel.load_from_checkpoint(
     pos_weight=torch.tensor(1.0)
 )
 
-gender_model.eval().cuda()
-
+gender_model.eval()
 
 if __name__ == "__main__":
     trainer = Trainer()
