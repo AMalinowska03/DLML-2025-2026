@@ -4,7 +4,7 @@ from PIL import Image
 import os
 import cv2
 
-folder = "data/widerface/manual"
+folder = "../../data/widerface/manual"
 files = os.listdir(folder)
 
 def manual_labeling():

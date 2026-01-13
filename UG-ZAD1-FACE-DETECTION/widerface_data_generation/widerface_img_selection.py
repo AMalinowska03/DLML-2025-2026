@@ -1,13 +1,10 @@
-import torch
 from PIL import Image
 from torchvision.datasets import WIDERFace
-from torchvision.transforms import ToTensor
 import os
 
-# Folder docelowy
-os.makedirs("data/widerface/manual", exist_ok=True)
+os.makedirs("../data/widerface/manual", exist_ok=True)
 
-root = "data/widerface"
+root = "../../data/widerface"
 
 EXCLUDE_IDX = [165, 198, 239, 402, 455, 467, 440, 475, 480, 485, 487, 488, 518, 565, 590, 604, 685, 707, 727, 736, 762,
                763, 784, 817, 825, 840, 841, 852, 854, 860, 861, 866, 870, 871, 875, 876, 878, 891, 894, 896, 904, 907,
@@ -29,13 +26,6 @@ def is_face_valid(idx, target, min_size=50):
 
 
 def crop_face_with_margin(img: Image.Image, bbox, margin=0.2):
-    """
-    Wycinanie twarzy z marginesem.
-
-    img    : PIL.Image
-    bbox   : [x, y, w, h]
-    margin : procent powiększenia w każdą stronę (0.2 = 20%)
-    """
     x, y, w, h = [int(v) for v in bbox]
 
     # Obliczamy marginesy
