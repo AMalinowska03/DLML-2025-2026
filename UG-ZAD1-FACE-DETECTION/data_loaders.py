@@ -18,11 +18,13 @@ GLASSES_ATTR = "Eyeglasses"
 wider_glasses = WIDERFaceAttr(
     csv_file="data/widerface/manual/widerface_faces_labels.csv",
     folder="data/widerface/manual",
+    attr=GLASSES_ATTR,
     transform=resnet_train_tf
 )
 wider_male = WIDERFaceAttr(
     csv_file="data/widerface/manual/widerface_faces_labels.csv",
     folder="data/widerface/manual",
+    attr=MALE_ATTR,
     transform=cnn_val_tf
 )
 
