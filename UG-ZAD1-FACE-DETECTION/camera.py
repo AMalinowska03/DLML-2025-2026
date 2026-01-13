@@ -8,11 +8,12 @@ import torch
 from models.LightningModel import LightningModel
 from models.GenderCNN import GenderCNN
 from models.EyeglassesResNet import EyeglassesResNet
-from datasets.transforms import cnn_val_tf, resnet_train_tf
+from datasets.transforms import cnn_val_tf, resnet_val_tf
 
 
 male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
-glasses_ckpt = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_ckpt_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_ckpt_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
 
 male_model = LightningModel.load_from_checkpoint(
     male_ckpt,
@@ -22,7 +23,7 @@ male_model = LightningModel.load_from_checkpoint(
 male_model.eval()
 
 glasses_model = LightningModel.load_from_checkpoint(
-    glasses_ckpt,
+    glasses_ckpt_v2,
     model=EyeglassesResNet(),
     pos_weight=torch.tensor(1.0)
 )
@@ -37,7 +38,7 @@ def draw_labels(frame, boxes, labels):
 
 def predict_patch(patch):
     male_x = cnn_val_tf(patch).unsqueeze(0)
-    glasses_x = resnet_train_tf(patch).unsqueeze(0)
+    glasses_x = resnet_val_tf(patch).unsqueeze(0)
 
     with torch.no_grad():
         male_logit = male_model(male_x).squeeze(1)

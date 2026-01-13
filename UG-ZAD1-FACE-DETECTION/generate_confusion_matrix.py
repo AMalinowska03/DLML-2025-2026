@@ -11,7 +11,8 @@ from datasets.test_gender_data_loaders import test_loader_gender, wider_male_loa
 from datasets.test_glasses_data_loaders import test_loader_glass, wider_glasses_loader
 
 male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
-glasses_ckpt = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_ckpt_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_ckpt_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
 datapath = "data/results/"
 
 def generate_confusion_matrix(model, loader, title, filename):
@@ -50,7 +51,7 @@ male_model = LightningModel.load_from_checkpoint(
 male_model.eval().cuda()
 
 glasses_model = LightningModel.load_from_checkpoint(
-    glasses_ckpt,
+    glasses_ckpt_v2,
     model=EyeglassesResNet(),
     pos_weight=torch.tensor(1.0)
 )

@@ -1,19 +1,18 @@
 import os
 from torchvision.utils import save_image
 from datasets.CelebAAttr import CelebAAttr
-from datasets.transforms import cnn_val_tf, resnet_train_tf
+from datasets.transforms import cnn_train_tf, resnet_train_tf
 
 os.makedirs("samples/gender/male", exist_ok=True)
 os.makedirs("samples/gender/female", exist_ok=True)
 os.makedirs("samples/glasses/yes", exist_ok=True)
 os.makedirs("samples/glasses/no", exist_ok=True)
 
-gender_ds = CelebAAttr("valid", "Male", cnn_val_tf)
+gender_ds = CelebAAttr("valid", "Male", cnn_train_tf)
 gender_ds_raw = CelebAAttr("valid", "Male", transform=None)  # bez transformacji
 
 glasses_ds = CelebAAttr("valid", "Eyeglasses", resnet_train_tf)
 glasses_ds_raw = CelebAAttr("valid", "Eyeglasses", transform=None)  # bez transformacji
-
 
 def collect(ds, ds_raw, n=5):
     pos, neg = [], []

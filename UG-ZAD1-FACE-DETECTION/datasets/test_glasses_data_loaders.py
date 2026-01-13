@@ -7,17 +7,17 @@ from torch.utils.data import DataLoader
 
 from CelebAAttr import CelebAAttr
 from WIDERFaceAttr import WIDERFaceAttr
-from transforms import resnet_train_tf
+from transforms import resnet_val_tf
 
 GLASSES_ATTR = "Eyeglasses"
 
-test_glass  = CelebAAttr("test",  GLASSES_ATTR, resnet_train_tf)
+test_glass  = CelebAAttr("test",  GLASSES_ATTR, resnet_val_tf)
 
 wider_glasses = WIDERFaceAttr(
     csv_file="data/widerface/manual/widerface_faces_labels.csv",
     folder="data/widerface/manual",
     attr=GLASSES_ATTR,
-    transform=resnet_train_tf
+    transform=resnet_val_tf
 )
 
 test_loader_glass  = DataLoader(test_glass, batch_size=128, num_workers=8, pin_memory=True, persistent_workers=True)

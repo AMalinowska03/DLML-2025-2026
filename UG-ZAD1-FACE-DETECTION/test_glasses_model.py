@@ -6,10 +6,11 @@ from datasets.test_glasses_data_loaders import test_loader_glass, wider_glasses_
 
 torch.set_float32_matmul_precision("high")
 
-glasses_checkpoint = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_checkpoint_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_checkpoint_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
 
 glasses_model = LightningModel.load_from_checkpoint(
-    glasses_checkpoint,
+    glasses_checkpoint_v2,
     model=EyeglassesResNet(),
     pos_weight=torch.tensor(1.0)
 )
