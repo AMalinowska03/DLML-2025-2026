@@ -46,6 +46,6 @@ class WiderFaceDetectionDataset(Dataset):
         }
 
         if self.transform:
-            img = self.transform(img, target)
+            img, target_dict = self.transform(img, target_dict)
 
         return img, target_dict
