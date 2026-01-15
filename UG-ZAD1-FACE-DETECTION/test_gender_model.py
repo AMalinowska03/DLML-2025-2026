@@ -4,6 +4,12 @@ from models.GenderCNN import GenderCNN
 from lightning import Trainer
 from datasets.test_gender_data_loaders import test_loader_gender, wider_male_loader
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [PID %(process)d] [Thread %(threadName)s] %(message)s",
+)
 torch.set_float32_matmul_precision("high")
 
 gender_checkpoint = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"

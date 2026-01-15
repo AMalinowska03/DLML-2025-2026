@@ -6,6 +6,12 @@ from models.LightningModel import LightningModel
 from models.GenderCNN import GenderCNN
 from datasets.train_gender_data_loaders import train_gender, train_loader_gender, val_loader_gender
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [PID %(process)d] [Thread %(threadName)s] %(message)s",
+)
 torch.set_float32_matmul_precision("high")
 
 gender_pos_weight = train_gender.pos_weight()

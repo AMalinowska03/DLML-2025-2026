@@ -10,6 +10,14 @@ from models.EyeglassesResNet import EyeglassesResNet
 from datasets.test_gender_data_loaders import test_loader_gender, wider_male_loader
 from datasets.test_glasses_data_loaders import test_loader_glass, wider_glasses_loader
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [PID %(process)d] [Thread %(threadName)s] %(message)s",
+)
+
+
 male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
 glasses_ckpt_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
 glasses_ckpt_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
@@ -19,13 +27,24 @@ def generate_confusion_matrix(model, loader, title, filename):
     if not os.path.exists(datapath):
         os.makedirs(datapath)
     model.eval()
-    model.cuda()
+
+    if torch.cuda.is_available():
+        model.cuda()
+    elif torch.xpu.is_available():
+        model.xpu()
+
     all_preds = []
     all_targets = []
 
     with torch.no_grad():
         for x, y in loader:
-            logits = model(x.cuda()).squeeze(1)
+            if torch.cuda.is_available():
+                logits = model(x.cuda()).squeeze(1)
+            elif torch.xpu.is_available():
+                logits = model(x.xpu()).squeeze(1)
+            else:
+                logits = model(x).squeeze(1)
+            # logits = model(x.cuda()).squeeze(1)
             preds = (torch.sigmoid(logits) > 0.5).int().cpu().numpy()
             all_preds.extend(preds)
             all_targets.extend(y.int().numpy())
@@ -39,8 +58,8 @@ def generate_confusion_matrix(model, loader, title, filename):
     plt.ylabel('Ground Truth')
     plt.title(f'Confusion Matrix: {title}')
     plt.savefig(f"{filename}.png")
-    print(f"Saved: {filename}.png")
-    print(classification_report(all_targets, all_preds))
+    logging.info(f"Saved: {filename}.png")
+    logging.info(classification_report(all_targets, all_preds))
 
 
 male_model = LightningModel.load_from_checkpoint(
@@ -48,14 +67,28 @@ male_model = LightningModel.load_from_checkpoint(
     model=GenderCNN(),
     pos_weight=torch.tensor(1.0)
 )
-male_model.eval().cuda()
+# male_model.eval().cuda()
+
+if torch.cuda.is_available():
+    male_model.eval().cuda()
+elif torch.xpu.is_available():
+    male_model.eval().xpu()
+else:
+    male_model.eval()
 
 glasses_model = LightningModel.load_from_checkpoint(
     glasses_ckpt_v2,
     model=EyeglassesResNet(),
     pos_weight=torch.tensor(1.0)
 )
-glasses_model.eval().cuda()
+# glasses_model.eval().cuda()
+
+if torch.cuda.is_available():
+    glasses_model.eval().cuda()
+elif torch.xpu.is_available():
+    glasses_model.eval().xpu()
+else:
+    glasses_model.eval()
 
 if __name__ == "__main__":
     generate_confusion_matrix(male_model, test_loader_gender, "Gender (CelebA Test)", f"{datapath}cm_gender_celeba")

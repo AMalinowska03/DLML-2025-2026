@@ -1,7 +1,7 @@
 import cv2
 from PIL import Image
-
-from skimage.feature import Cascade
+from models.FaceDetector import FaceDetectorLightning
+import torchvision.transforms.v2 as transforms
 
 import torch
 
@@ -14,6 +14,7 @@ from datasets.transforms import cnn_val_tf, resnet_val_tf
 male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
 glasses_ckpt_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
 glasses_ckpt_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
+face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=8-step=11448.ckpt" # TODO: set when generated
 
 male_model = LightningModel.load_from_checkpoint(
     male_ckpt,
@@ -30,6 +31,10 @@ glasses_model = LightningModel.load_from_checkpoint(
 )
 glasses_model.eval()
 glasses_model.to("cuda" if torch.cuda.is_available() else "xpu" if torch.xpu.is_available() else "cpu")
+
+detector_model = FaceDetectorLightning.load_from_checkpoint(face_detector_ckpt_v1)
+detector_model.eval()
+detector_model.to("cuda" if torch.cuda.is_available() else "xpu" if torch.xpu.is_available() else "cpu")
 
 
 def draw_labels(frame, boxes, labels):
@@ -61,28 +66,28 @@ def expand_box(x, y, w, h, img_w, img_h, margin=1):
 
     return x1, y1, x2 - x1, y2 - y1
 
-def detect(frame, detector):
-    detections = detector.detect_multi_scale(img=frame, scale_factor=1.2, step_ratio=1,
-                                             min_size=(100, 100), max_size=(200, 200))
-    boxes = []
-    for detection in detections:
-        x = detection['c']
-        y = detection['r']
-        w = detection['width']
-        h = detection['height']
-        boxes.append((x, y, w, h))
-    return boxes
 
+def detect(frame, model, threshold=0.7):
+    # frame to tensor
+    img_tensor = transforms.functional.to_dtype(transforms.functional.to_image(frame), torch.float32) / 255.0
+    img_tensor = img_tensor.to(next(model.parameters()).device)
+
+    with torch.no_grad():
+        prediction = model([img_tensor])[0]
+
+    boxes = []
+    for box, score in zip(prediction['boxes'], prediction['scores']):
+        if score > threshold:
+            x1, y1, x2, y2 = box.int().cpu().numpy()
+            boxes.append((x1, y1, x2 - x1, y2 - y1))  # Konwersja na [x, y, w, h] dla reszty kodu
+    return boxes
 
 def draw(frame, boxes):
     for x, y, w, h in boxes:
         frame = cv2.rectangle(frame, (x, y), (x + w, y + h), color=(255, 0, 0), thickness=2)
 
-if __name__ == '__main__':
-    # file = lbp_frontal_face_cascade_filename()
-    file = "face.xml"
-    detector = Cascade(file)
 
+if __name__ == '__main__':
     cap = cv2.VideoCapture(0)
     skip = 5
     i = 0
@@ -90,7 +95,7 @@ if __name__ == '__main__':
     while (True):
         ret, frame = cap.read()
         if i % skip == 0:
-            boxes = detect(frame, detector)
+            boxes = detect(frame, detector_model)
 
         labels = []
         for (x, y, w, h) in boxes:
@@ -101,7 +106,7 @@ if __name__ == '__main__':
 
         draw_labels(frame, boxes, labels)
         draw(frame, boxes)
-        cv2.imshow('System Detekcji i Atrybutów (Ocena 4)', frame)
+        cv2.imshow('System Detekcji i Atrybutów (Ocena 5)', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         i += 1
