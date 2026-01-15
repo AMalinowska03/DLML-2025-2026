@@ -59,4 +59,4 @@ class FaceDetectorLightning(L.LightningModule):
         self.map_metric.reset()
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=1e-4)
+        return torch.optim.AdamW(self.parameters(), lr=1e-5)
