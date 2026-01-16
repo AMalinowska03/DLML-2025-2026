@@ -4,11 +4,14 @@ import torchvision.transforms.v2.functional as F
 from torch.utils.data import DataLoader
 import os
 import logging
+import torchvision.transforms.v2 as transforms
 
 from models.FaceDetector import FaceDetectorLightning
-from train_face_detector import prepare_data, collate_fn
+from train_face_detector import collate_fn
+from widerface_data_generation.WiderFaceDetectionDataset import WiderFaceDetectionDataset
 
-face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=8-step=11448.ckpt" # TODO: set when generated
+
+face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
 OUTPUT_DIR = "visualization_results"
 THRESHOLD = 0.5  # Rysujemy tylko predykcje z pewnością > 50%
 NUM_IMAGES_TO_SAVE = 10  # Ile przykładów zapisać
@@ -17,13 +20,29 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
+test_transform = transforms.Compose([
+    transforms.ToImage(),
+    transforms.ToDtype(torch.float32, scale=True),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
 def tensor_to_cv2_image(tensor_img):
-    """Konwertuje tensor PyTorch [C, H, W] float na obraz OpenCV [H, W, C] uint8 BGR."""
-    # Tensor jest w zakresie [0, 1], konwertujemy na [0, 255] byte
-    img_byte = F.to_dtype(tensor_img, torch.uint8, scale=True)
-    # Zmiana kolejności wymiarów z [C, H, W] na [H, W, C]
-    img_numpy = img_byte.permute(1, 2, 0).cpu().numpy()
-    # Konwersja RGB -> BGR (dla OpenCV)
+    """Konwertuje tensor PyTorch [C, H, W] na obraz OpenCV [H, W, C] BGR, cofając normalizację."""
+    # Kopiujemy tensor, żeby nie zmieniać oryginału
+    img = tensor_img.clone().cpu()
+
+    # 1. Cofamy normalizację (Denormalization)
+    # Wykorzystujemy te same wartości co w test_transform
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    img = img * std + mean
+
+    # 2. Konwersja do uint8 [0, 255]
+    img = torch.clamp(img, 0, 1) # upewniamy się, że zakres to [0, 1]
+    img_byte = (img * 255).to(torch.uint8)
+
+    # 3. Zmiana kolejności wymiarów i kolorów
+    img_numpy = img_byte.permute(1, 2, 0).numpy()
     img_bgr = cv2.cvtColor(img_numpy, cv2.COLOR_RGB2BGR)
     return img_bgr
 
@@ -59,8 +78,8 @@ def visualize():
     # 2. Przygotowanie danych testowych
     # Używamy funkcji z train_detector.py żeby mieć ten sam split
     logging.info("Preparing test data...")
-    _, _, test_ds = prepare_data()
-    test_loader = DataLoader(test_ds, batch_size=1, shuffle=True, collate_fn=collate_fn)
+    test_ds = WiderFaceDetectionDataset(root="data", split="val", transform=test_transform)
+    test_loader = DataLoader(test_ds, batch_size=4, collate_fn=collate_fn, num_workers=2)
 
     logging.info(f"Starting visualization. Saving {NUM_IMAGES_TO_SAVE} images to '{OUTPUT_DIR}'...")
 
