@@ -6,7 +6,8 @@ import logging
 
 
 class WiderFaceDetectionDataset(Dataset):
-    def __init__(self, root, split="train", transform=None, base_ds=None):
+    def __init__(self, root, split="train", transform=None, base_ds=None, blur_less=1):
+        self.blur_less = blur_less
         if base_ds is not None:
             self.ds = base_ds
         else:
@@ -20,10 +21,10 @@ class WiderFaceDetectionDataset(Dataset):
                 self.valid_indices.append(i)
         logging.info(f"Finished. {len(self.valid_indices)} images left.\n")
 
-    def is_face_valid(self, target, idx, min_size=30):
+    def is_face_valid(self, target, idx, min_size=30, blur_less=1):
         x, y, w, h = target['bbox'][idx]
         return (target['invalid'][idx] == 0 and
-                target['blur'][idx] < 2 and # TODO: try with 1
+                target['blur'][idx] < blur_less and # TODO: try with 1
                 w >= min_size and h >= min_size)
 
     def __len__(self):
@@ -38,7 +39,7 @@ class WiderFaceDetectionDataset(Dataset):
         boxes = []
         labels = []
         for j in range(len(target['bbox'])):
-            if self.is_face_valid(target, j):
+            if self.is_face_valid(target, j, self.blur_less):
                 x, y, w, h = target['bbox'][j]
                 boxes.append([x, y, x + w, y + h])
                 labels.append(1)

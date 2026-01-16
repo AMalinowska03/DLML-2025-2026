@@ -12,7 +12,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] [PID %(process)d] [Thread %(threadName)s] %(message)s",
 )
 
-face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
+face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=5-mAP=41_79.ckpt" # TODO: set when generated
 def collate_fn(batch):
     return tuple(zip(*batch))
 
@@ -23,7 +23,7 @@ test_transform = transforms.Compose([
 ])
 
 if __name__ == '__main__':
-    test_ds = WiderFaceDetectionDataset(root="data", split="val", transform=test_transform)
+    test_ds = WiderFaceDetectionDataset(root="data", split="val", transform=test_transform, blur_less=2)
     test_loader = DataLoader(test_ds, batch_size=4, collate_fn=collate_fn, num_workers=2)
 
     model = FaceDetectorLightning.load_from_checkpoint(face_detector_ckpt_v1)

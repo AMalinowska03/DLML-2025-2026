@@ -11,6 +11,7 @@ from train_face_detector import collate_fn
 from widerface_data_generation.WiderFaceDetectionDataset import WiderFaceDetectionDataset
 
 
+# face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=5-mAP=41_79.ckpt" # TODO: set when generated
 face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
 OUTPUT_DIR = "visualization_results"
 THRESHOLD = 0.5  # Rysujemy tylko predykcje z pewnością > 50%
@@ -28,20 +29,15 @@ test_transform = transforms.Compose([
 
 def tensor_to_cv2_image(tensor_img):
     """Konwertuje tensor PyTorch [C, H, W] na obraz OpenCV [H, W, C] BGR, cofając normalizację."""
-    # Kopiujemy tensor, żeby nie zmieniać oryginału
     img = tensor_img.clone().cpu()
 
-    # 1. Cofamy normalizację (Denormalization)
-    # Wykorzystujemy te same wartości co w test_transform
     mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
     std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
     img = img * std + mean
 
-    # 2. Konwersja do uint8 [0, 255]
-    img = torch.clamp(img, 0, 1) # upewniamy się, że zakres to [0, 1]
+    img = torch.clamp(img, 0, 1)
     img_byte = (img * 255).to(torch.uint8)
 
-    # 3. Zmiana kolejności wymiarów i kolorów
     img_numpy = img_byte.permute(1, 2, 0).numpy()
     img_bgr = cv2.cvtColor(img_numpy, cv2.COLOR_RGB2BGR)
     return img_bgr
