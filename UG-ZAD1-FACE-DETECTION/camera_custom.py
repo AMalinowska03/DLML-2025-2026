@@ -14,7 +14,7 @@ from datasets.transforms import cnn_val_tf, resnet_val_tf
 male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
 glasses_ckpt_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
 glasses_ckpt_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
-face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=5-mAP=41_79.ckpt" # TODO: set when generated
+face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
 
 male_model = LightningModel.load_from_checkpoint(
     male_ckpt,
@@ -44,12 +44,18 @@ def draw_labels(frame, boxes, labels):
 
 
 def predict_patch(patch):
-    male_x = cnn_val_tf(patch).unsqueeze(0)
-    glasses_x = resnet_val_tf(patch).unsqueeze(0)
+    # Sprawdzamy, na jakim urządzeniu jest model (np. male_model)
+    device = next(male_model.parameters()).device
+
+    # Tworzymy tensory i natychmiast przesyłamy je na to samo urządzenie (.to(device))
+    male_x = cnn_val_tf(patch).unsqueeze(0).to(device)
+    glasses_x = resnet_val_tf(patch).unsqueeze(0).to(device)
 
     with torch.no_grad():
+        # Modele są już na 'device', teraz dane też tam są
         male_logit = male_model(male_x).squeeze(1)
         glasses_logit = glasses_model(glasses_x).squeeze(1)
+
         male_prob = torch.sigmoid(male_logit).item()
         glasses_prob = torch.sigmoid(glasses_logit).item()
 

@@ -39,16 +39,20 @@ def draw_labels(frame, boxes, labels):
 
 
 def predict_patch(patch):
-    male_x = cnn_val_tf(patch).unsqueeze(0)
-    glasses_x = resnet_val_tf(patch).unsqueeze(0)
+    device = next(male_model.parameters()).device
+
+    male_x = cnn_val_tf(patch).unsqueeze(0).to(device)
+    glasses_x = resnet_val_tf(patch).unsqueeze(0).to(device)
 
     with torch.no_grad():
         male_logit = male_model(male_x).squeeze(1)
         glasses_logit = glasses_model(glasses_x).squeeze(1)
+
         male_prob = torch.sigmoid(male_logit).item()
         glasses_prob = torch.sigmoid(glasses_logit).item()
 
     return male_prob > 0.5, glasses_prob > 0.5
+
 
 def expand_box(x, y, w, h, img_w, img_h, margin=1):
     pad_w = int(w * margin)
