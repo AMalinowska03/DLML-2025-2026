@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from torchvision.datasets import WIDERFace
+from torchvision import tv_tensors
 import logging
 
 
@@ -22,7 +23,7 @@ class WiderFaceDetectionDataset(Dataset):
     def is_face_valid(self, target, idx, min_size=30):
         x, y, w, h = target['bbox'][idx]
         return (target['invalid'][idx] == 0 and
-                target['blur'][idx] < 2 and
+                target['blur'][idx] < 2 and # TODO: try with 1
                 w >= min_size and h >= min_size)
 
     def __len__(self):
@@ -32,6 +33,8 @@ class WiderFaceDetectionDataset(Dataset):
         real_idx = self.valid_indices[idx]
         img, target = self.ds[real_idx]
 
+        width, height = img.size
+
         boxes = []
         labels = []
         for j in range(len(target['bbox'])):
@@ -40,8 +43,17 @@ class WiderFaceDetectionDataset(Dataset):
                 boxes.append([x, y, x + w, y + h])
                 labels.append(1)
 
+        img = tv_tensors.Image(img)
+
+        # 2. Boxy jako BoundingBoxes z określonym formatem i rozmiarem płótna
+        boxes = tv_tensors.BoundingBoxes(
+            boxes,
+            format="XYXY",
+            canvas_size=(height, width),
+            dtype=torch.float32
+        )
         target_dict = {
-            "boxes": torch.as_tensor(boxes, dtype=torch.float32),
+            "boxes": boxes,
             "labels": torch.as_tensor(labels, dtype=torch.int64)
         }
 
