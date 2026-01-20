@@ -18,6 +18,7 @@ CONFIG = {
 
 if __name__ == "__main__":
     dm = TextDataModule(CONFIG)
+    dm.setup()
 
     print(f"Dane przygotowane. Vocab size: {dm.vocab_size}")
 

@@ -71,10 +71,10 @@ class BaseLitModel(L.LightningModule):
 
 
 class LSTMPredictor(BaseLitModel):
-    def __init__(self, vocab_size, embedding_dim, hidden_dim, num_layers, lr):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, num_layers, dropout, lr):
         super().__init__(vocab_size, lr)
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers, batch_first=True, dropout=0.2)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers, batch_first=True, dropout=dropout)
         self.fc = nn.Linear(hidden_dim, vocab_size)
 
     def forward(self, x, hidden=None):
@@ -122,7 +122,7 @@ class TransformerPredictor(BaseLitModel):
         embeds = self.embedding(x) * math.sqrt(self.hparams.embedding_dim)
         embeds = self.pos_encoder(embeds)
 
-        mask = self.generate_square_subsequent_mask(seq_len, x.device)
+        mask = self._generate_square_subsequent_mask(seq_len, x.device)
 
         output = self.transformer_decoder(tgt=embeds, memory=embeds, tgt_mask=mask, memory_mask=mask)
         logits = self.fc(output)

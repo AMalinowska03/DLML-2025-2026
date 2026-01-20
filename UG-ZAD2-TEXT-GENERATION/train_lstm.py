@@ -7,11 +7,12 @@ from models import LSTMPredictor
 CONFIG = {
     'batch_size': 128,
     'seq_len': 100,
-    'lr': 0.001,
-    'max_epochs': 10,
+    'lr': 0.002,
+    'max_epochs': 100,
     'embedding_dim': 128,
     'hidden_dim': 256,
     'num_layers': 2,
+    'dropout': 0.1,
     'tokenizer_type': 'char',  # lub 'bpe'
     'data_sources': ['data/pantadeusz.txt']
 }
@@ -27,6 +28,7 @@ if __name__ == "__main__":
         embedding_dim=CONFIG['embedding_dim'],
         hidden_dim=CONFIG['hidden_dim'],
         num_layers=CONFIG['num_layers'],
+        dropout=CONFIG['dropout'],
         lr=CONFIG['lr']
     )
 
