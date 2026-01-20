@@ -20,12 +20,18 @@ class BaseLitModel(L.LightningModule):
         self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size)
         self.val_acc_top_5 = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size, top_k=5)
 
+    def _get_logits(self, x):
+        output = self(x)
+        if isinstance(output, tuple):
+            return output[0]
+        return output
+
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        logits = self(x)
+        logits = self._get_logits(x)
 
         preds = logits.reshape(-1, self.vocab_size)
         target = y.reshape(-1)
@@ -35,8 +41,8 @@ class BaseLitModel(L.LightningModule):
 
         self.train_acc(preds.argmax(dim=1), target)
         self.log("train_acc", self.train_acc, on_step=False, on_epoch=True)
-        self.train_acc_top5(preds, target)
-        self.log("train_acc_top_5", self.train_acc, on_step=False, on_epoch=True)
+        self.train_acc_top_5(preds, target)
+        self.log("train_acc_top_5", self.train_acc_top_5, on_step=False, on_epoch=True)
 
         perplexity = torch.exp(loss)
         self.log("train_ppl", perplexity, prog_bar=True)
@@ -45,7 +51,7 @@ class BaseLitModel(L.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        logits = self(x)
+        logits = self._get_logits(x)
 
         preds = logits.reshape(-1, self.vocab_size)
         target = y.reshape(-1)
@@ -55,8 +61,8 @@ class BaseLitModel(L.LightningModule):
 
         self.val_acc(preds.argmax(dim=1), target)
         self.log("val_acc", self.val_acc, on_step=False, on_epoch=True)
-        self.val_acc_top5(preds, target)
-        self.log("val_acc_top5", self.val_acc_top5, on_step=False, on_epoch=True)
+        self.val_acc_top_5(preds, target)
+        self.log("val_acc_top_5", self.val_acc_top_5, on_step=False, on_epoch=True)
 
         perplexity = torch.exp(loss)
         self.log("val_ppl", perplexity, prog_bar=True)
