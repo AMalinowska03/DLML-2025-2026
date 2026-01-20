@@ -47,10 +47,12 @@ CONFIG = {
     'seq_len': 100,
     'tokenizer_type': 'char',  # lub 'bpe'
     'data_sources': ['data/pantadeusz.txt'],
-    'model_checkpoint': 'lightning_logs/lstm_v1',
+    'model_checkpoint': 'lightning_logs/lstm_v1/checkpoints/epoch=73-step=231842.ckpt',
 }
 
 if __name__ == "__main__":
     dm = TextDataModule(CONFIG)
+    dm.setup()
     model = LSTMPredictor.load_from_checkpoint(CONFIG['model_checkpoint'])
-    generated_text = generate_text_lstm(model, "Tadeusz", dm.tokenizer)
+    generated_text = generate_text_lstm(model, "Litwo", dm.tokenizer)
+    print(generated_text)
