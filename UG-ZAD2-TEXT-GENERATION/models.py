@@ -14,8 +14,11 @@ class BaseLitModel(L.LightningModule):
         self.lr = lr
         self.vocab_size = vocab_size
         self.loss_fn = nn.CrossEntropyLoss()
+
         self.train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size)
+        self.train_acc_top_5 = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size, top_k=5)
         self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size)
+        self.val_acc_top_5 = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size, top_k=5)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -23,22 +26,41 @@ class BaseLitModel(L.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        if isinstance(logits, tuple): logits = logits[0]
-        # Reshape dla Loss: (Batch * Seq, Vocab) vs (Batch * Seq)
-        loss = self.loss_fn(logits.reshape(-1, self.vocab_size), y.reshape(-1))
+
+        preds = logits.reshape(-1, self.vocab_size)
+        target = y.reshape(-1)
+
+        loss = self.loss_fn(preds, target)
         self.log("train_loss", loss, prog_bar=True)
-        self.train_acc(logits.reshape(-1, self.vocab_size).argmax(dim=1), y.reshape(-1))
+
+        self.train_acc(preds.argmax(dim=1), target)
         self.log("train_acc", self.train_acc, on_step=False, on_epoch=True)
+        self.train_acc_top5(preds, target)
+        self.log("train_acc_top_5", self.train_acc, on_step=False, on_epoch=True)
+
+        perplexity = torch.exp(loss)
+        self.log("train_ppl", perplexity, prog_bar=True)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        if isinstance(logits, tuple): logits = logits[0]
-        loss = self.loss_fn(logits.reshape(-1, self.vocab_size), y.reshape(-1))
+
+        preds = logits.reshape(-1, self.vocab_size)
+        target = y.reshape(-1)
+
+        loss = self.loss_fn(preds, target)
         self.log("val_loss", loss, prog_bar=True)
-        self.val_acc(logits.reshape(-1, self.vocab_size).argmax(dim=1), y.reshape(-1))
+
+        self.val_acc(preds.argmax(dim=1), target)
         self.log("val_acc", self.val_acc, on_step=False, on_epoch=True)
+        self.val_acc_top5(preds, target)
+        self.log("val_acc_top5", self.val_acc_top5, on_step=False, on_epoch=True)
+
+        perplexity = torch.exp(loss)
+        self.log("val_ppl", perplexity, prog_bar=True)
+
         return loss
 
 
@@ -46,14 +68,14 @@ class LSTMPredictor(BaseLitModel):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, num_layers, lr):
         super().__init__(vocab_size, lr)
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers, batch_first=True, dropout=0.1)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, num_layers, batch_first=True, dropout=0.2)
         self.fc = nn.Linear(hidden_dim, vocab_size)
 
     def forward(self, x, hidden=None):
         embeds = self.embedding(x)
         out, hidden = self.lstm(embeds, hidden)
         logits = self.fc(out)
-        # Zwracamy logits. Jeśli potrzebujemy hidden (do generacji), musimy to obsłużyć osobno
+
         if self.training or hidden is None:
             return logits
         return logits, hidden
