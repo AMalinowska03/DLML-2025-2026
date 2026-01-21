@@ -8,7 +8,7 @@ CONFIG = {
     'seq_len': 100,
     'tokenizer_type': 'char',  # lub 'bpe'
     'data_sources': ['data/pantadeusz.txt'],
-    'model_checkpoint': 'lightning_logs/transformer_1_v1',
+    'model_checkpoint': 'lightning_logs/transformer_1_v1/checkpoints/epoch=84-step=266305.ckpt',
 }
 
 if __name__ == "__main__":
@@ -19,5 +19,4 @@ if __name__ == "__main__":
 
     model = TransformerPredictor.load_from_checkpoint(CONFIG['model_checkpoint'])
 
-    result = trainer.test(model, datamodule=dm)
-    print(result)
+    trainer.test(model, datamodule=dm)

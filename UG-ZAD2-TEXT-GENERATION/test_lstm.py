@@ -8,7 +8,7 @@ CONFIG = {
     'seq_len': 100,
     'tokenizer_type': 'char',
     'data_sources': ['data/pantadeusz.txt'],
-    'model_checkpoint': 'lightning_logs/lstm_v1/checkpoints/epoch=73-step=231842.ckpt',
+    'model_checkpoint': 'lightning_logs/lstm_v3/checkpoints/epoch=70-step=222443.ckpt',
 }
 
 if __name__ == "__main__":
@@ -19,5 +19,4 @@ if __name__ == "__main__":
 
     model = LSTMPredictor.load_from_checkpoint(CONFIG['model_checkpoint'])
 
-    result = trainer.test(model, datamodule=dm)
-    print(result)
+    trainer.test(model, datamodule=dm)

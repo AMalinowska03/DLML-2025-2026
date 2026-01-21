@@ -5,7 +5,7 @@ from dataset import TextDataModule
 from models import TransformerPredictor
 
 CONFIG = {
-    'batch_size': 32,
+    'batch_size': 128,
     'seq_len': 100,
     'lr': 0.001,
     'max_epochs': 100,

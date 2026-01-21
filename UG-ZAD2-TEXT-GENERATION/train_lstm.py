@@ -7,7 +7,7 @@ from models import LSTMPredictor
 CONFIG = {
     'batch_size': 128,
     'seq_len': 100,
-    'lr': 0.002,
+    'lr': 0.001,
     'max_epochs': 100,
     'embedding_dim': 128,
     'hidden_dim': 256,

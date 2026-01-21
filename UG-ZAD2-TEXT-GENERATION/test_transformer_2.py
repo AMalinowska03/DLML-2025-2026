@@ -19,5 +19,4 @@ if __name__ == "__main__":
 
     model = TransformerPredictor.load_from_checkpoint(CONFIG['model_checkpoint'])
 
-    result = trainer.test(model, datamodule=dm)
-    print(result)
+    trainer.test(model, datamodule=dm)
