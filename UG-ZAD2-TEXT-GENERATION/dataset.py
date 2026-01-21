@@ -2,7 +2,7 @@ import lightning as L
 import torch
 from torch.utils.data import DataLoader, random_split, Dataset
 
-from dataset_tokenizers import CharTokenizer, HFTokenizerWrapper
+from dataset_tokenizers import CharTokenizer, HFTokenizerWrapper, LiteHFTokenizer
 
 
 class TextDataset(Dataset):
@@ -33,18 +33,27 @@ class TextDataModule(L.LightningDataModule):
             with open(fname, 'r', encoding='utf-8') as f:
                 full_text += f.read().lower() + "\n"
 
+        if self.cfg['tokenizer_type'] == 'custom':
+            self.tokenizer = LiteHFTokenizer(full_text)
         if self.cfg['tokenizer_type'] == 'bpe':
             self.tokenizer = HFTokenizerWrapper()
-        else:
+        elif self.cfg['tokenizer_type'] == 'char':
             self.tokenizer = CharTokenizer(full_text)
 
         self.vocab_size = self.tokenizer.vocab_size
 
         full_dataset = TextDataset(full_text, self.tokenizer, self.cfg['seq_len'])
 
-        train_size = int(0.9 * len(full_dataset))
-        val_size = len(full_dataset) - train_size
-        self.train_set, self.val_set = random_split(full_dataset, [train_size, val_size])
+        total_len = len(full_dataset)
+        train_size = int(0.8 * total_len)
+        val_size = int(0.1 * total_len)
+        test_size = total_len - train_size - val_size
+
+        self.train_set, self.val_set, self.test_set = random_split(
+            full_dataset,
+            [train_size, val_size, test_size],
+            generator=torch.Generator().manual_seed(42)  # Ważne dla powtarzalności testów!
+        )
 
     def train_dataloader(self):
         return DataLoader(
@@ -58,6 +67,14 @@ class TextDataModule(L.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_set,
+            batch_size=self.cfg['batch_size'],
+            num_workers=2,
+            persistent_workers=True
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_set,
             batch_size=self.cfg['batch_size'],
             num_workers=2,
             persistent_workers=True

@@ -19,6 +19,8 @@ class BaseLitModel(L.LightningModule):
         self.train_acc_top_5 = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size, top_k=5)
         self.val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size)
         self.val_acc_top_5 = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size, top_k=5)
+        self.test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size)
+        self.test_acc_top_5 = torchmetrics.Accuracy(task="multiclass", num_classes=vocab_size, top_k=5)
 
     def _get_logits(self, x):
         output = self(x)
@@ -66,6 +68,26 @@ class BaseLitModel(L.LightningModule):
 
         perplexity = torch.exp(loss)
         self.log("val_ppl", perplexity, prog_bar=True)
+
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self._get_logits(x)
+
+        preds = logits.reshape(-1, self.vocab_size)
+        target = y.reshape(-1)
+
+        loss = self.loss_fn(preds, target)
+        self.log("test_loss", loss, prog_bar=True)
+
+        self.test_acc(preds.argmax(dim=1), target)
+        self.log("test_acc", self.test_acc, on_step=False, on_epoch=True)
+        self.test_acc_top_5(preds, target)
+        self.log("test_acc_top_5", self.test_acc_top_5, on_step=False, on_epoch=True)
+
+        perplexity = torch.exp(loss)
+        self.log("test_ppl", perplexity, prog_bar=True)
 
         return loss
 

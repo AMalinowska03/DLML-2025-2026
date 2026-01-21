@@ -8,7 +8,7 @@ CONFIG = {
     'batch_size': 128,
     'seq_len': 100,
     'lr': 0.001,
-    'max_epochs': 10,
+    'max_epochs': 100,
     'embedding_dim': 128,
     'num_layers': 2,
     'nhead': 4,

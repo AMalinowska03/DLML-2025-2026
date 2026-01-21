@@ -5,15 +5,15 @@ from dataset import TextDataModule
 from models import TransformerPredictor
 
 CONFIG = {
-    'batch_size': 128,
+    'batch_size': 32,
     'seq_len': 100,
     'lr': 0.001,
-    'max_epochs': 10,
+    'max_epochs': 100,
     'embedding_dim': 128,
     'num_layers': 2,
     'nhead': 4,
-    'tokenizer_type': 'bpe',  # lub 'char'
-    'data_sources': ['data/pantadeusz.txt', 'data/quovadis.txt']
+    'tokenizer_type': 'custom',  # lub 'char'
+    'data_sources': ['data/pantadeusz.txt', 'data/quovadis.txt', 'data/potoptompierwszy.txt']
 }
 
 if __name__ == "__main__":
