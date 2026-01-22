@@ -41,5 +41,8 @@ CONFIG = {
 
 if __name__ == "__main__":
     dm = TextDataModule(CONFIG)
+    dm.setup()
     model = TransformerPredictor.load_from_checkpoint(CONFIG['model_checkpoint'])
     generated_text = generate_text_transformer(model, "Tadeusz", dm.tokenizer, max_ctx_len=CONFIG['seq_len'])
+    print(generated_text)
+

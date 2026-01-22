@@ -12,7 +12,7 @@ CONFIG = {
     'embedding_dim': 128,
     'num_layers': 2,
     'nhead': 4,
-    'tokenizer_type': 'custom',  # lub 'char'
+    'tokenizer_type': 'custom',
     'data_sources': ['data/pantadeusz.txt', 'data/quovadis.txt', 'data/potoptompierwszy.txt']
 }
 

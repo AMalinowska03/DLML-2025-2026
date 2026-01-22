@@ -34,7 +34,7 @@ class TextDataModule(L.LightningDataModule):
                 full_text += f.read().lower() + "\n"
 
         if self.cfg['tokenizer_type'] == 'custom':
-            self.tokenizer = LiteHFTokenizer(full_text)
+            self.tokenizer = LiteHFTokenizer(full_text, vocab_size=self.cfg['vocab_size'])
         if self.cfg['tokenizer_type'] == 'bpe':
             self.tokenizer = HFTokenizerWrapper()
         elif self.cfg['tokenizer_type'] == 'char':
