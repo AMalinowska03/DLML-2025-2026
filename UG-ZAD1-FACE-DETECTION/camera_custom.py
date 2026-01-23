@@ -44,15 +44,12 @@ def draw_labels(frame, boxes, labels):
 
 
 def predict_patch(patch):
-    # Sprawdzamy, na jakim urządzeniu jest model (np. male_model)
     device = next(male_model.parameters()).device
 
-    # Tworzymy tensory i natychmiast przesyłamy je na to samo urządzenie (.to(device))
     male_x = cnn_val_tf(patch).unsqueeze(0).to(device)
     glasses_x = resnet_val_tf(patch).unsqueeze(0).to(device)
 
     with torch.no_grad():
-        # Modele są już na 'device', teraz dane też tam są
         male_logit = male_model(male_x).squeeze(1)
         glasses_logit = glasses_model(glasses_x).squeeze(1)
 

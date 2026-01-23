@@ -41,7 +41,7 @@ class CharTokenizer(BaseTokenizer):
 class HFTokenizerWrapper(BaseTokenizer):
     def __init__(self, model_name='allegro/herbert-base-cased'):
         # Używamy gotowego tokenizera dla języka polskiego (np. HerBERT), ale uczymy model od zera
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=False)
 
     def encode(self, text):
         return self.tokenizer.encode(text, add_special_tokens=False)
@@ -64,7 +64,7 @@ class LiteHFTokenizer(BaseTokenizer):
             print(f"Tworzenie lekkiego tokenizera (baza: GPT-2, cel: {vocab_size} tokenów)...")
 
             # Używamy 'gpt2', bo świetnie radzi sobie z generacją i nie robi [UNK]
-            base_tokenizer = AutoTokenizer.from_pretrained("gpt2", local_files_only=True)
+            base_tokenizer = AutoTokenizer.from_pretrained("gpt2", local_files_only=False)
 
             def batch_iterator():
                 # Dzielimy tekst na kawałki po 1000 znaków, żeby nie zapchać RAMu

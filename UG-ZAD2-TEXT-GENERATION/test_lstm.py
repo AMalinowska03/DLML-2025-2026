@@ -8,7 +8,9 @@ CONFIG = {
     'seq_len': 100,
     'tokenizer_type': 'char',
     'data_sources': ['data/pantadeusz.txt'],
-    'model_checkpoint': 'lightning_logs/lstm_v3/checkpoints/epoch=70-step=222443.ckpt',
+    # 'model_checkpoint': 'lightning_logs/lstm_v2_128_512_nlay4/checkpoints/epoch=30-step=86335.ckpt',
+    'model_checkpoint': 'lightning_logs/lstm_v1/checkpoints/epoch=96-step=270145.ckpt',
+
 }
 
 if __name__ == "__main__":

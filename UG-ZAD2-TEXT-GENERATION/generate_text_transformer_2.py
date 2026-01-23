@@ -34,15 +34,16 @@ def generate_text_transformer(model, start_text, tokenizer, length=100, temperat
 CONFIG = {
     'batch_size': 128,
     'seq_len': 100,
-    'vocab_size': 5000,
+    'vocab_size': 10000, # 5000
     'tokenizer_type': 'custom',  # lub 'bpe'
     'data_sources': ['data/pantadeusz.txt', 'data/quovadis.txt', 'data/potoptompierwszy.txt'],
-    'model_checkpoint': 'lightning_logs/transformer_2_v1_5k_vocab/checkpoints/epoch=66-step=280060.ckpt',
+    'model_checkpoint': 'lightning_logs/transformer_2_v1_10k_vocab_part_2/checkpoints/epoch=81-step=305286.ckpt',
+    # 'model_checkpoint': 'lightning_logs/transformer_2_v1_5k_vocab/checkpoints/epoch=66-step=280060.ckpt',
 }
 
 if __name__ == "__main__":
     dm = TextDataModule(CONFIG)
     dm.setup()
     model = TransformerPredictor.load_from_checkpoint(CONFIG['model_checkpoint'])
-    generated_text = generate_text_transformer(model, "Tadeusz", dm.tokenizer, max_ctx_len=CONFIG['seq_len'])
+    generated_text = generate_text_transformer(model, "Litwo", dm.tokenizer, max_ctx_len=CONFIG['seq_len'])
     print(generated_text)

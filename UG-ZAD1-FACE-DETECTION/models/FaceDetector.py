@@ -29,6 +29,8 @@ class FaceDetectorLightning(L.LightningModule):
         self.log("train_loss", losses)
         return losses
 
+    # loss sumujemy po składowych loss z elementów modelu, który sprawdza kalsyfikację ale i położenie boxa i czy zawiera jakikolwiek obiekt
+    # staramy sie minimalizować wszystkie
     def validation_step(self, batch, batch_idx):
         images, targets = batch
         self.model.train()
