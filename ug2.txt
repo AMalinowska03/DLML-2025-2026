@@ -1,0 +1,14 @@
+klasyfikacja CrossEntropyLoss - binarna klasyfikacja
+regresja MSELoss
+
+architektura analogiczna do zadania 1
+zamiast obrazu są cząsteczki chemiczne
+bloczek F1 uczący się wydobywania wektora liczb robimy jako sieć gdzie warstwę splotową zastępujemy czymś do grafów z PyTorch Geometric
+uwzględnienie krawędzi i innych pierdół poprawi raczej wyniki więc raczej uwzględnić
+
+rozważyć dwa przypadki m=1 (każda cząsteczka stanie się jedną liczbą rzeczywistą) i m=2 (osadzenie każdej cząsteczki jako punkty w przestrzeni), są to rzeczy do wizualizacji
+oznaczyć przy kalsyfikacji różnymi kolorami/znakami punkty w przestrzeni, przy liniowym modelu trzeba namęczyć się tak żeby punkty były rozdzielalne prostą linią jedną, przy MLP może być dowolna krzywa
+przy regresji dla kazego punktu można wyznaczyć moment dipolowy ktore staramy się ułożyć w linię lub nie (MLP).  dla regresji przy 2 wymiarach robimy wizualkę na 3D
+
+
+na 5 przy knn trzeba naauczyć tak żeby podobne osadzało w przestrzeni blisko siebie a różne daleko. Do wykorzystania w tym celu ContristiveLoss lub TripletLoss

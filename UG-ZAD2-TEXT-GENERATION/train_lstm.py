@@ -9,9 +9,9 @@ CONFIG = {
     'seq_len': 100,
     'lr': 0.001,
     'max_epochs': 100,
-    'embedding_dim': 128,
-    'hidden_dim': 256,
-    'num_layers': 2,
+    'embedding_dim': 128, #128,
+    'hidden_dim': 512, # 256,
+    'num_layers': 4,
     'dropout': 0.1,
     'tokenizer_type': 'char',  # lub 'bpe'
     'data_sources': ['data/pantadeusz.txt']
