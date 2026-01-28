@@ -2,6 +2,7 @@ import lightning as L
 import torch
 from torch_geometric.datasets import MoleculeNet, QM9
 from torch_geometric.loader import DataLoader
+import torch_geometric.transforms as T
 
 
 class BACEDataModule(L.LightningDataModule):
@@ -10,6 +11,7 @@ class BACEDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.root = root
         self.num_features = None
+        self.num_edge_features = None
         self.num_classes = 2
         self.pos_weight = None
 
@@ -22,7 +24,7 @@ class BACEDataModule(L.LightningDataModule):
         self.pos_weight = torch.tensor([num_neg / num_pos])
 
         self.num_features = dataset.num_features
-
+        self.num_edge_features = dataset.num_edge_features
         total_len = len(dataset)
         train_len = int(0.8 * total_len)
         val_len = int(0.1 * total_len)
@@ -33,13 +35,13 @@ class BACEDataModule(L.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=2)
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=2, persistent_workers=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=2)
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=2, persistent_workers=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=2)
+        return DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=2, persistent_workers=True)
 
 
 class QM9DataModule(L.LightningDataModule):
@@ -48,13 +50,20 @@ class QM9DataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.root = root
         self.num_features = None
+        self.num_edge_features = None
         self.num_classes = 1
 
     def setup(self, stage=None):
-        dataset = QM9(root=self.root)
+        transform = T.Compose([
+            T.Cartesian(norm=True, cat=True)
+        ])
+
+        dataset = QM9(root=self.root, transform=transform)
+
         dataset.data.y = dataset.data.y[:, 0:1]  # QM9 target: bierzemy indeks 0 (moment dipolowy)
 
         self.num_features = dataset.num_features
+        self.num_edge_features = dataset.num_edge_features
 
         total_len = len(dataset)
         train_len = int(0.8 * total_len)
@@ -67,10 +76,10 @@ class QM9DataModule(L.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=2)
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=2, persistent_workers=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=2)
+        return DataLoader(self.val_ds, batch_size=self.batch_size, num_workers=2, persistent_workers=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=2)
+        return DataLoader(self.test_ds, batch_size=self.batch_size, num_workers=2, persistent_workers=True)

@@ -19,15 +19,16 @@ L.seed_everything(42)
 # max pool
 # 31 - hd 32, mlphd 64, lay 2, dropout 0.1
 # 32 - hd 32, mlphd 64, lay 3, dropout 0.1
+
 CONFIG = {
     'batch_size': 128,
-    'gnn_type': "GCN", # ['GCN', 'Transformer']
+    'gnn_type': "GINE", # ['GCN', 'Transformer']
+    'num_layers': 2,
     'hidden_dim': 32,
     'embedding_dim': 2, # [1, 2]
     'predictor_type': "MLP", # ['Linear', 'MLP']
     'mlp_hidden_dim': 64, # jeśli nie predictor_type != MLP to może być None
-    'out_dim': 1,
-    'num_layers': 3,
+    'out_dim': 2,
     'dropout_encoder': 0.1
 }
 
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     dm = BACEDataModule(batch_size=CONFIG['batch_size'])
     dm.setup()
 
-    model = MoleculeNetClassificationModel(in_channels=dm.num_features, config=CONFIG, pos_weight=dm.pos_weight)
+    model = MoleculeNetClassificationModel(in_channels=dm.num_features, edge_dim=dm.num_edge_features, config=CONFIG, pos_weight=dm.pos_weight)
 
     early_stop = EarlyStopping(monitor="val_loss", patience=5, mode="min")
 

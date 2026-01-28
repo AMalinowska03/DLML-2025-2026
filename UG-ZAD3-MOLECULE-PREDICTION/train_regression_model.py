@@ -8,19 +8,21 @@ L.seed_everything(42)
 
 CONFIG = {
     'batch_size': 128,
-    'gnn_type': "GCN", # ['GCN', 'Transformer']
+    'gnn_type': "GMM", # ['GMM', 'Transformer']
+    'num_layers': 2,
     'hidden_dim': 64,
     'embedding_dim': 2, # [1, 2]
     'predictor_type': "MLP", # ['Linear', 'MLP']
     'mlp_hidden_dim': 128,  # jeśli nie predictor_type != MLP to może być None
-    'out_dim': 1
+    'out_dim': 1,
+    'dropout_encoder': 0.1
 }
 
 if __name__ == "__main__":
     dm = QM9DataModule(batch_size=CONFIG['batch_size'])
     dm.setup()
 
-    model = MoleculeNetRegressionModel(in_channels=dm.num_features, config=CONFIG)
+    model = MoleculeNetRegressionModel(in_channels=dm.num_features, edge_dim=dm.num_edge_features, config=CONFIG)
 
     early_stop = EarlyStopping(monitor="val_loss", patience=5, mode="min")
 
