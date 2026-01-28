@@ -3,14 +3,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchmetrics
-from torch_geometric.nn import GCNConv, TransformerConv, global_mean_pool
+from torch_geometric.nn import GCNConv, TransformerConv, global_mean_pool, global_max_pool, norm
 
 
 class GNNEncoder(nn.Module):
-    def __init__(self, in_channels, hidden_dim, embedding_dim, gnn_type="GCN", num_layers=2):
+    def __init__(self, in_channels, hidden_dim, embedding_dim, gnn_type="GCN", num_layers=2, dropout=0.2):
         super().__init__()
         self.layers = nn.ModuleList()
         self.gnn_type = gnn_type
+        self.norms = nn.ModuleList()
+        self.dropout = dropout
 
         current_dim = in_channels
         for _ in range(num_layers):
@@ -19,6 +21,7 @@ class GNNEncoder(nn.Module):
             elif gnn_type == "Transformer":
                 # TransformerConv wymaga edge_attr (opcjonalnie) i pos (opcjonalnie)
                 self.layers.append(TransformerConv(current_dim, hidden_dim, heads=2, concat=False))
+            self.norms.append(norm.BatchNorm(hidden_dim))
             current_dim = hidden_dim
 
         # Projekcja do przestrzeni embeddingu (np. 1D, 2D lub więcej)
@@ -26,13 +29,14 @@ class GNNEncoder(nn.Module):
         self.act = nn.ReLU()
 
     def forward(self, x, edge_index, batch):
-        for layer in self.layers:
+        for layer, norm in zip(self.layers, self.norms):
             x = layer(x, edge_index)
+            x = norm(x)
             x = self.act(x)
-            x = F.dropout(x, p=0.2, training=self.training)
+            x = F.dropout(x, p=self.dropout, training=self.training)
 
         # Global Pooling (graf -> wektor)
-        x = global_mean_pool(x, batch)
+        x = global_max_pool(x, batch)
 
         embedding = self.final_proj(x)
         return embedding
@@ -46,7 +50,9 @@ class Predictor(nn.Module):
         else:
             self.net = nn.Sequential(
                 nn.Linear(embedding_dim, hidden_dim),
+                nn.BatchNorm1d(hidden_dim),
                 nn.ReLU(),
+                nn.Dropout(0.1),
                 nn.Linear(hidden_dim, out_dim)
             )
 
@@ -60,7 +66,8 @@ class MoleculeNetClassificationModel(L.LightningModule):
         self.save_hyperparameters()
         self.config = config
 
-        self.encoder = GNNEncoder(in_channels, config['hidden_dim'], config['embedding_dim'], config['gnn_type'])
+        self.encoder = GNNEncoder(in_channels, config['hidden_dim'], config['embedding_dim'], config['gnn_type'],
+                                  num_layers=config['num_layers'], dropout=config['dropout_encoder'])
         self.predictor = Predictor(config['embedding_dim'], config['out_dim'], config['predictor_type'], config.get('mlp_hidden_dim', None))
 
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
@@ -77,7 +84,7 @@ class MoleculeNetClassificationModel(L.LightningModule):
         y = batch.y.float().view(-1)
 
         loss = self.criterion(preds, y)
-        self.log("train_loss", loss, prog_bar=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch.num_graphs)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -86,7 +93,7 @@ class MoleculeNetClassificationModel(L.LightningModule):
         y = batch.y.float().view(-1)
 
         val_loss = self.criterion(preds, y)
-        self.log("val_loss", val_loss, prog_bar=True)
+        self.log("val_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch.num_graphs)
 
         self.metric(torch.sigmoid(preds), y.int())
         self.log("val_metric", self.metric, on_step=False, on_epoch=True)
@@ -101,7 +108,8 @@ class MoleculeNetRegressionModel(L.LightningModule):
         self.save_hyperparameters()
         self.config = config
 
-        self.encoder = GNNEncoder(in_channels, config['hidden_dim'], config['embedding_dim'], config['gnn_type'])
+        self.encoder = GNNEncoder(in_channels, config['hidden_dim'], config['embedding_dim'], config['gnn_type'],
+                                  num_layers=config['num_layers'], dropout=config['dropout_encoder'])
         self.predictor = Predictor(config['embedding_dim'], config['out_dim'], config['predictor_type'], config.get('mlp_hidden_dim', None))
 
         self.criterion = nn.MSELoss()
@@ -118,7 +126,7 @@ class MoleculeNetRegressionModel(L.LightningModule):
         y = batch.y.float().view(-1)
 
         loss = self.criterion(preds, y)
-        self.log("train_loss", loss, prog_bar=True)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch.num_graphs)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -127,8 +135,7 @@ class MoleculeNetRegressionModel(L.LightningModule):
         y = batch.y.float().view(-1)
 
         val_loss = self.criterion(preds, y)
-        self.log("val_loss", val_loss, prog_bar=True)
-
+        self.log("val_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch.num_graphs)
         self.metric(preds, y)
         self.log("val_metric", self.metric, on_step=False, on_epoch=True)
 

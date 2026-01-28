@@ -6,19 +6,6 @@ from model import MoleculeNetClassificationModel
 
 L.seed_everything(42)
 
-# relu->norm, mean pool
-# 25 - hd 16, mlphd 64, lay 3, dropout 0.1
-# 26 - hd 16, mlphd 64, lay 3, dropout 0.2
-# 27 - hd 32, mlphd 64, lay 3, dropout 0.1
-# 28 - hd 32, mlphd 64, lay 3, dropout 0.2
-
-# changed order to norm->relu
-# 29 - hd 32, mlphd 64, lay 3, dropout 0.1
-# 30 - hd 32, mlphd 64, lay 2, dropout 0.1
-
-# max pool
-# 31 - hd 32, mlphd 64, lay 2, dropout 0.1
-# 32 - hd 32, mlphd 64, lay 3, dropout 0.1
 CONFIG = {
     'batch_size': 128,
     'gnn_type': "GCN", # ['GCN', 'Transformer']
@@ -27,7 +14,7 @@ CONFIG = {
     'predictor_type': "MLP", # ['Linear', 'MLP']
     'mlp_hidden_dim': 64, # jeśli nie predictor_type != MLP to może być None
     'out_dim': 1,
-    'num_layers': 3,
+    'num_layers': 2,
     'dropout_encoder': 0.1
 }
 
