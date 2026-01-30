@@ -1,10 +1,11 @@
 import lightning as L
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from lightning.pytorch.callbacks import EarlyStopping
 from lightning.pytorch.loggers import TensorBoardLogger
 
 from dataset import QM9DataModule
 from model import MoleculeNetRegressionModel
 
+import itertools
 import copy
 
 
@@ -22,22 +23,20 @@ CONFIG = {
     'dropout_encoder': 0.1
 }
 
-selected_experiments = [
-    {'embedding_dim': 1,  'gnn_type': 'Transformer', 'predictor_type': 'MLP', 'hidden_dim': 128, 'mlp_hidden_dim': 64},
-    {'embedding_dim': 1,  'gnn_type': 'Transformer', 'predictor_type': 'Linear', 'hidden_dim': 128},
-    {'embedding_dim': 2,  'gnn_type': 'Transformer', 'predictor_type': 'MLP',    'hidden_dim': 128},
-    {'embedding_dim': 2, 'gnn_type': 'Transformer', 'predictor_type': 'Linear', 'hidden_dim': 128, 'mlp_hidden_dim': 64},
-    {'embedding_dim': 16, 'gnn_type': 'Transformer', 'predictor_type': 'MLP',    'hidden_dim': 128},
-    {'embedding_dim': 16, 'gnn_type': 'GMM',         'predictor_type': 'MLP',    'hidden_dim': 256},
-    {'embedding_dim': 32, 'gnn_type': 'Transformer', 'predictor_type': 'MLP',    'hidden_dim': 128},
-    {'embedding_dim': 32, 'gnn_type': 'GMM',         'predictor_type': 'MLP',    'hidden_dim': 256},
-]
+search_space = {
+    'hidden_dim': [128, 256],
+    'embedding_dim': [1, 2, 16, 32],
+    'predictor_type': ["Linear", "MLP"]
+}
 
 if __name__ == "__main__":
     dm = QM9DataModule(batch_size=CONFIG['batch_size'])
     dm.setup()
 
-    for i, exp_params in enumerate(selected_experiments):
+    keys, values = zip(*search_space.items())
+    experiments = [dict(zip(keys, v)) for v in itertools.product(*values)]
+
+    for i, exp_params in enumerate(experiments):
         current_config = copy.deepcopy(CONFIG)
         current_config.update(exp_params)
 
@@ -53,12 +52,12 @@ if __name__ == "__main__":
 
         logger = TensorBoardLogger(
             save_dir="lightning_logs",
-            name="regression_final_plus",
+            name="regression_param_selection",
             version=version_name
         )
 
         trainer = L.Trainer(
-            max_epochs=100,
+            max_epochs=10,
             callbacks=[early_stop],
             accelerator="auto",
             devices=1,

@@ -1,3 +1,5 @@
+import os
+
 import lightning as L
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +11,7 @@ from model import MoleculeNetRegressionModel
 L.seed_everything(42)
 
 
-def visualize_regression_1d(model, dm, title="QM9 - Aproksymacja (1D)"):
+def visualize_regression_1d(model, dm, title="QM9 - Aproksymacja (1D)", filename=None):
     model.eval()
     embs, targets = [], []
 
@@ -34,10 +36,16 @@ def visualize_regression_1d(model, dm, title="QM9 - Aproksymacja (1D)"):
     plt.xlabel("Embedding (1D)")
     plt.ylabel("Wartość przewidywana")
     plt.legend()
+
+    if filename:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        plt.savefig(filename, dpi=300, bbox_inches='tight')
+
     plt.show()
+    plt.close()
 
 
-def visualize_regression_2d(model, dm, title="QM9 - Powierzchnia Aproksymacji (2D)"):
+def visualize_regression_2d(model, dm, title="QM9 - Powierzchnia Aproksymacji (2D)", filename=None):
     model.eval()
     embs, targets = [], []
 
@@ -74,13 +82,59 @@ def visualize_regression_2d(model, dm, title="QM9 - Powierzchnia Aproksymacji (2
     plt.xlabel("Embedding Dimension 1")
     plt.ylabel("Embedding Dimension 2")
     plt.grid(alpha=0.2)
+
+    if filename:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        plt.savefig(filename, dpi=300, bbox_inches='tight')
+
     plt.show()
+    plt.close()
+
+
+def visualize_regression_3d(model, dm, title="QM9 - Powierzchnia Aproksymacji (3D)", filename=None):
+    model.eval()
+    embs, targets = [], []
+
+    with torch.no_grad():
+        for batch in dm.test_dataloader():
+            out, emb = model(batch)
+            embs.append(emb)
+            targets.append(batch.y.view(-1))
+
+    embs = torch.cat(embs).cpu().numpy()
+    targets = torch.cat(targets).cpu().numpy()
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(embs[:, 0], embs[:, 1], targets, c=targets, cmap='viridis', s=20)
+
+    x = np.linspace(embs[:, 0].min(), embs[:, 0].max(), 30)
+    y = np.linspace(embs[:, 1].min(), embs[:, 1].max(), 30)
+    X, Y = np.meshgrid(x, y)
+
+    grid = torch.tensor(np.c_[X.ravel(), Y.ravel()], dtype=torch.float32)
+    with torch.no_grad():
+        Z = model.predictor(grid).reshape(X.shape).numpy()
+
+    ax.set_title(title)
+    ax.plot_surface(X, Y, Z, alpha=0.3, cmap='viridis')
+    ax.set_xlabel('Embedding Dimension 1')
+    ax.set_ylabel('Embedding Dimension 2')
+    ax.set_zlabel('Moment Dipolowy')
+
+    if filename:
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        plt.savefig(filename, dpi=300, bbox_inches='tight')
+
+    plt.show()
+    plt.close()
 
 
 CONFIG = {
-    'batch_size': 128,
+    'batch_size': 256,
     'embedding_dim': 2,  # [1, 2]
-    'checkpoint_path': 'lightning_logs_classification_test1/version_1/checkpoints/epoch=29-step=24540.ckpt',
+    'checkpoint_path': 'lightning_logs/regression_final_plus/emb2_MLP_hidden128/checkpoints/epoch=68-step=28221.ckpt',
 }
 
 if __name__ == "__main__":
@@ -97,3 +151,4 @@ if __name__ == "__main__":
         visualize_regression_1d(model, dm)
     elif CONFIG['embedding_dim'] == 2:
         visualize_regression_2d(model, dm)
+        visualize_regression_3d(model, dm)
