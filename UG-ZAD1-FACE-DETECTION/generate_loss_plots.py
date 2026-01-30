@@ -21,5 +21,5 @@ def plot_metrics(csv_path):
     plt.show()
 
 # do uruchomienia tam gdzie mamy metryki z logami
-# plot_metrics("lightning_logs/gender_v1/metrics.csv")
-# plot_metrics("lightning_logs/glasses_v2/metrics.csv")
+# plot_metrics("lightning_logs_classification_test1/gender_v1/metrics.csv")
+# plot_metrics("lightning_logs_classification_test1/glasses_v2/metrics.csv")

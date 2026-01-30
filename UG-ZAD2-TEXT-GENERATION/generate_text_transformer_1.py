@@ -36,8 +36,8 @@ CONFIG = {
     'seq_len': 100,
     'tokenizer_type': 'char',  # lub 'bpe'
     'data_sources': ['data/pantadeusz.txt'],
-    'model_checkpoint': 'lightning_logs/transformer_1_v1/checkpoints/epoch=84-step=266305.ckpt',
-    # 'model_checkpoint': 'lightning_logs/transformer_1_nlay1_nhead1_dim64/checkpoints/epoch=45-step=128110.ckpt',
+    'model_checkpoint': 'lightning_logs_classification_test1/transformer_1_v1/checkpoints/epoch=84-step=266305.ckpt',
+    # 'model_checkpoint': 'lightning_logs_classification_test1/transformer_1_nlay1_nhead1_dim64/checkpoints/epoch=45-step=128110.ckpt',
 
 }
 

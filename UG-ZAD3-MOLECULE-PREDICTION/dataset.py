@@ -18,21 +18,32 @@ class BACEDataModule(L.LightningDataModule):
     def setup(self, stage=None):
         dataset = MoleculeNet(root=self.root, name="BACE")
 
-        labels = torch.tensor([d.y.item() for d in dataset])
-        num_pos = labels.sum()
-        num_neg = len(labels) - num_pos
-        self.pos_weight = torch.tensor([num_neg / num_pos])
-
-        self.num_features = dataset.num_features
-        self.num_edge_features = dataset.num_edge_features
+        # Stały podział danych
         total_len = len(dataset)
         train_len = int(0.8 * total_len)
         val_len = int(0.1 * total_len)
         test_len = total_len - train_len - val_len
+
         self.train_ds, self.val_ds, self.test_ds = torch.utils.data.random_split(
             dataset, [train_len, val_len, test_len],
             generator=torch.Generator().manual_seed(42)
         )
+
+        # Obliczanie wag tylko dla zbioru treningowego
+        train_labels = torch.tensor([data.y.item() for data in self.train_ds])
+        num_pos = train_labels.sum().float()
+        num_neg = len(train_labels) - num_pos
+
+        # Wagi odwrotnie proporcjonalne do liczności klas
+        # Klasa rzadsza otrzymuje większą wagę
+        weight_neg = len(train_labels) / num_neg
+        weight_pos = len(train_labels) / num_pos
+
+        # Normalizacja wag, aby ich suma była równa liczbie klas (opcjonalne, ale zalecane)
+        self.pos_weight = torch.tensor([weight_neg, weight_pos])
+
+        self.num_features = dataset.num_features
+        self.num_edge_features = dataset.num_edge_features
 
     def train_dataloader(self):
         return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=2, persistent_workers=True)

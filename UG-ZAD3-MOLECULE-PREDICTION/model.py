@@ -3,7 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
 import torchmetrics
-from torch_geometric.nn import GINEConv, GMMConv, TransformerConv, global_mean_pool, global_add_pool
+from torch_geometric.nn import GINEConv, GMMConv, TransformerConv, global_mean_pool, global_add_pool, global_max_pool
+from pytorch_metric_learning import losses, miners, distances
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
 
 
 class GNNEncoder(nn.Module):
@@ -23,6 +26,7 @@ class GNNEncoder(nn.Module):
             if gnn_type == "GINE":
                 mlp = nn.Sequential(
                     nn.Linear(hidden_dim, hidden_dim),
+                    nn.BatchNorm1d(hidden_dim),
                     nn.ReLU(),
                     nn.Linear(hidden_dim, hidden_dim)
                 )
@@ -55,11 +59,12 @@ class GNNEncoder(nn.Module):
             x = self.act(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
-        pool_fn = global_add_pool if self.gnn_type == "GMM" else global_mean_pool
+        pool_fn = global_add_pool if self.gnn_type == "GMM" else global_max_pool
         molecule_emb = pool_fn(x, batch.batch)
 
         return self.final_proj(molecule_emb)
 
+# ------------------------------------------------------------------------------------------------------------------
 
 class Predictor(nn.Module):
     def __init__(self, embedding_dim, out_dim, predictor_type="Linear", hidden_dim=128):
@@ -80,12 +85,16 @@ class Predictor(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+# ------------------------------------------------------------------------------------------------------------------
+
 
 class MoleculeNetClassificationModel(L.LightningModule):
     def __init__(self, in_channels, edge_dim, config, pos_weight):
         super().__init__()
         self.save_hyperparameters()
         self.config = config
+        self.training_step_outputs = []
+        self.validation_step_outputs = []
 
         self.encoder = GNNEncoder(in_channels, edge_dim, config['hidden_dim'], config['embedding_dim'],
                                   config['gnn_type'], config['num_layers'], config['dropout_encoder'])
@@ -93,8 +102,9 @@ class MoleculeNetClassificationModel(L.LightningModule):
         self.predictor = Predictor(config['embedding_dim'], config['out_dim'], config['predictor_type'],
                                    config.get('mlp_hidden_dim'))
 
-        weights = torch.tensor([1.0, pos_weight.item()])
-        self.criterion = nn.CrossEntropyLoss(weight=weights)
+        # weights = torch.tensor([1.0, pos_weight.item()])
+        self.register_buffer("class_weights", pos_weight)
+        self.criterion = nn.CrossEntropyLoss(weight=self.class_weights)
 
         self.metrics = torchmetrics.MetricCollection([
             torchmetrics.Accuracy(task="binary"),
@@ -114,20 +124,33 @@ class MoleculeNetClassificationModel(L.LightningModule):
         y = batch.y.view(-1).long()
 
         loss = self.criterion(logits, y)
-        self.log("train_loss", loss, prog_bar=True, batch_size=batch.num_graphs)
+        self.log("train_loss", loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs)
+        self.training_step_outputs.append(loss)
 
         return loss
+
+    def on_train_epoch_end(self):
+        epoch_average = torch.stack(self.training_step_outputs).mean()
+        self.log("training_loss_epoch", epoch_average)
+
+        self.training_step_outputs.clear()
 
     def validation_step(self, batch, batch_idx):
         logits, _ = self(batch)
         y = batch.y.view(-1).long()
 
         loss = self.criterion(logits, y)
-        self.log("val_loss", loss, prog_bar=True, batch_size=batch.num_graphs)
+        self.log("val_loss", loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs)
+        self.validation_step_outputs.append(loss)
 
         probs = torch.softmax(logits, dim=1)[:, 1]
         output = self.metrics(probs, y)
-        self.log_dict(output, on_epoch=True, prog_bar=True, batch_size=batch.num_graphs)
+        self.log_dict(output, on_epoch=True, on_step=False, prog_bar=True, batch_size=batch.num_graphs)
+
+    def on_validation_epoch_end(self):
+        epoch_average = torch.stack(self.validation_step_outputs).mean()
+        self.log("val_loss_epoch", epoch_average)
+        self.validation_step_outputs.clear()
 
     def test_step(self, batch, batch_idx):
         logits, _ = self(batch)
@@ -143,12 +166,15 @@ class MoleculeNetClassificationModel(L.LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
 
+# ------------------------------------------------------------------------------------------------------------------
 
 class MoleculeNetRegressionModel(L.LightningModule):
     def __init__(self, in_channels, edge_dim, config):
         super().__init__()
         self.save_hyperparameters()
         self.config = config
+        self.training_step_outputs = []
+        self.validation_step_outputs = []
 
         self.encoder = GNNEncoder(in_channels, edge_dim, config['hidden_dim'], config['embedding_dim'],
                                   config['gnn_type'], config['num_layers'], config['dropout_encoder'])
@@ -196,3 +222,124 @@ class MoleculeNetRegressionModel(L.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+#
+# class MoleculeSiameseLearningModel(L.LightningModule):
+#     def __init__(self, in_channels, edge_dim, config):
+#         super().__init__()
+#         self.save_hyperparameters()
+#         self.config = config
+#
+#         # Wykorzystujemy Twój istniejący GNNEncoder
+#         self.encoder = GNNEncoder(
+#             in_channels,
+#             edge_dim,
+#             config['hidden_dim'],
+#             config['embedding_dim'],
+#             config['gnn_type'],
+#             config['num_layers'],
+#             config['dropout_encoder']
+#         )
+#
+#         self.loss_fn = losses.TripletMarginLoss(margin=config.get('margin', 0.1))
+#         self.miner = miners.TripletMarginMiner(margin=config.get('margin', 0.1), type_of_triplets="semi-hard")
+#
+#     def forward(self, batch):
+#         emb = self.encoder(batch)
+#         return F.normalize(emb, p=2, dim=1)
+#
+#     def training_step(self, batch, batch_idx):
+#         emb = self(batch)
+#         y = batch.y.view(-1)
+#
+#         indices_tuple = self.miner(emb, y)
+#         loss = self.loss_fn(emb, y, indices_tuple)
+#
+#         self.log("train_metric_loss", loss, prog_bar=True, on_epoch=True, on_step=False, batch_size=batch.num_graphs)
+#         return loss
+#
+#     def validation_step(self, batch, batch_idx):
+#         emb = self(batch)
+#         y = batch.y.view(-1)
+#         indices_tuple = self.miner(emb, y)
+#         loss = self.loss_fn(emb, y, indices_tuple)
+#         self.log("val_metric_loss", loss, prog_bar=True, batch_size=batch.num_graphs)
+#
+#     def configure_optimizers(self):
+#         return torch.optim.Adam(self.parameters(), lr=0.001)
+
+class MoleculeSiameseLearningModel(L.LightningModule):
+    def __init__(self, in_channels, edge_dim, config):
+        super().__init__()
+        self.save_hyperparameters()
+        self.config = config
+
+        self.encoder = GNNEncoder(
+            in_channels,
+            edge_dim,
+            config['hidden_dim'],
+            config['embedding_dim'],
+            config['gnn_type'],
+            config['num_layers'],
+            config['dropout_encoder']
+        )
+
+        margin = config.get('margin', 0.2)
+        self.loss_fn = losses.TripletMarginLoss(margin=margin)
+        self.miner = miners.TripletMarginMiner(margin=margin, type_of_triplets="semi-hard")
+
+        self.validation_step_outputs = []
+        self.training_step_outputs = []
+
+    def forward(self, batch):
+        emb = self.encoder(batch)
+        return F.normalize(emb, p=2, dim=1)
+
+    def training_step(self, batch, batch_idx):
+        emb = self(batch)
+        y = batch.y.view(-1)
+
+        indices_tuple = self.miner(emb, y)
+        loss = self.loss_fn(emb, y, indices_tuple)
+
+        self.log("train_loss", loss, prog_bar=True, on_epoch=True, batch_size=batch.num_graphs)
+
+        self.training_step_outputs.append({
+            "emb": emb.detach().cpu(),
+            "y": y.detach().cpu()
+        })
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        emb = self(batch)
+        y = batch.y.view(-1)
+
+        self.validation_step_outputs.append({
+            "emb": emb.detach().cpu(),
+            "y": y.detach().cpu()
+        })
+
+        indices_tuple = self.miner(emb, y)
+        loss = self.loss_fn(emb, y, indices_tuple)
+        self.log("val_loss", loss, prog_bar=True, batch_size=batch.num_graphs)
+
+    def on_validation_epoch_end(self):
+        if not self.validation_step_outputs:
+            return
+
+        all_emb = torch.cat([x["emb"] for x in self.validation_step_outputs]).cpu().numpy()
+        all_y = torch.cat([x["y"] for x in self.validation_step_outputs]).cpu().numpy()
+
+        knn = KNeighborsClassifier(n_neighbors=self.config.get('k_neighbors', 5))
+        knn.fit(all_emb, all_y)
+        preds = knn.predict(all_emb)
+        acc = accuracy_score(all_y, preds)
+
+        self.log("val_knn_acc", acc, prog_bar=True)
+        self.validation_step_outputs.clear()
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.config.get('lr', 0.001))
+        return optimizer

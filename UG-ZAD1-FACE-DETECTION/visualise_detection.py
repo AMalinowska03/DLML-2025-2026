@@ -11,8 +11,8 @@
 # from widerface_data_generation.WiderFaceDetectionDataset import WiderFaceDetectionDataset
 #
 #
-# # face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=5-mAP=41_79.ckpt" # TODO: set when generated
-# face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
+# # face_detector_ckpt_v1 = "lightning_logs_classification_test1/face_detector_v1/checkpoints/epoch=5-mAP=41_79.ckpt" # TODO: set when generated
+# face_detector_ckpt_v1 = "lightning_logs_classification_test1/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
 # OUTPUT_DIR = "visualization_results"
 # THRESHOLD = 0.5  # Rysujemy tylko predykcje z pewnością > 50%
 # NUM_IMAGES_TO_SAVE = 10  # Ile przykładów zapisać

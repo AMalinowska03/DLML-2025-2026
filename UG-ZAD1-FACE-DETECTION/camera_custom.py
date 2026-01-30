@@ -11,10 +11,10 @@ from models.EyeglassesResNet import EyeglassesResNet
 from datasets.transforms import cnn_val_tf, resnet_val_tf
 
 
-male_ckpt = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
-glasses_ckpt_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
-glasses_ckpt_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
-face_detector_ckpt_v1 = "lightning_logs/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
+male_ckpt = "lightning_logs_classification_test1/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
+glasses_ckpt_v1 = "lightning_logs_classification_test1/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_ckpt_v2 = "lightning_logs_classification_test1/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
+face_detector_ckpt_v1 = "lightning_logs_classification_test1/face_detector_v1/checkpoints/epoch=4-mAP=40_77.ckpt" # TODO: set when generated
 
 male_model = LightningModel.load_from_checkpoint(
     male_ckpt,

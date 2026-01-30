@@ -73,7 +73,7 @@ def save_classification_samples(model, dataloader, dataset_name, model_name):
 
 if __name__ == "__main__":
     # 1. TEST GENDER
-    gender_checkpoint = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
+    gender_checkpoint = "lightning_logs_classification_test1/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
     gender_model = LightningModel.load_from_checkpoint(
         gender_checkpoint, model=GenderCNN(), pos_weight=torch.tensor(1.0)
     )
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     save_classification_samples(gender_model, wider_male_loader, "WiderFace", "GenderCNN")
 
     # 2. TEST GLASSES
-    glasses_checkpoint = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
+    glasses_checkpoint = "lightning_logs_classification_test1/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
     glasses_model = LightningModel.load_from_checkpoint(
         glasses_checkpoint, model=EyeglassesResNet(), pos_weight=torch.tensor(1.0)
     )

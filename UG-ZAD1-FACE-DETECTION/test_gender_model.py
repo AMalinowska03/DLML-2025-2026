@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 torch.set_float32_matmul_precision("high")
 
-gender_checkpoint = "lightning_logs/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
+gender_checkpoint = "lightning_logs_classification_test1/gender_v1/checkpoints/epoch=24-step=31800.ckpt"
 
 gender_model = LightningModel.load_from_checkpoint(
     gender_checkpoint,

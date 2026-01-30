@@ -12,8 +12,8 @@ logging.basicConfig(
 )
 torch.set_float32_matmul_precision("high")
 
-glasses_checkpoint_v1 = "lightning_logs/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
-glasses_checkpoint_v2 = "lightning_logs/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
+glasses_checkpoint_v1 = "lightning_logs_classification_test1/glasses_v1/checkpoints/epoch=9-step=12720.ckpt"
+glasses_checkpoint_v2 = "lightning_logs_classification_test1/glasses_v2/checkpoints/epoch=8-step=11448.ckpt"
 
 glasses_model = LightningModel.load_from_checkpoint(
     glasses_checkpoint_v2,

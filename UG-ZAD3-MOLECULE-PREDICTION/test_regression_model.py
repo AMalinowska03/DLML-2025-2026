@@ -80,7 +80,7 @@ def visualize_regression_2d(model, dm, title="QM9 - Powierzchnia Aproksymacji (2
 CONFIG = {
     'batch_size': 128,
     'embedding_dim': 2,  # [1, 2]
-    'checkpoint_path': 'lightning_logs/version_1/checkpoints/epoch=29-step=24540.ckpt',
+    'checkpoint_path': 'lightning_logs_classification_test1/version_1/checkpoints/epoch=29-step=24540.ckpt',
 }
 
 if __name__ == "__main__":

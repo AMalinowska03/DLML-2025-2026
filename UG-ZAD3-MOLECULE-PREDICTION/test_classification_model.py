@@ -6,10 +6,13 @@ import torch
 from dataset import BACEDataModule
 from model import MoleculeNetClassificationModel
 
+import matplotlib
+matplotlib.use('TkAgg') # Or 'Qt5Agg' if you have PyQt installed
+
 L.seed_everything(42)
 
 
-def visualize_classification_1d(model, dm, title="BACE - Granica decyzyjna (1D)"):
+def visualize_classification_1d(model, dm, name, title="BACE - Granica decyzyjna (1D)"):
     model.eval()
     embs, labels = [], []
 
@@ -51,10 +54,11 @@ def visualize_classification_1d(model, dm, title="BACE - Granica decyzyjna (1D)"
     plt.ylim(-0.1, 1.1)
     plt.legend(loc='center right')
     plt.grid(alpha=0.3)
-    plt.show()
+
+    plt.savefig("classification_visualization/"+name)
 
 
-def visualize_classification_2d(model, dm, title="BACE - Granica decyzyjna (2D)"):
+def visualize_classification_2d(model, dm, name, title="BACE - Granica decyzyjna (2D)"):
     model.eval()
     embs, labels = [], []
 
@@ -94,26 +98,65 @@ def visualize_classification_2d(model, dm, title="BACE - Granica decyzyjna (2D)"
     plt.legend(handles, ["Nie-inhibitor (0)", "Inhibitor (1)"], loc="upper right")
 
     plt.grid(alpha=0.2)
-    plt.show()
+    plt.savefig("classification_visualization/"+name)
 
 
-CONFIG = {
-    'batch_size': 64,
-    'embedding_dim': 2,  # [1, 2]
-    'checkpoint_path': 'lightning_logs/version_0/checkpoints/epoch=11-step=228.ckpt',
-}
+configs = [
+    {
+        'batch_size': 64,
+        'embedding_dim': 1,
+        'checkpoint_path': r'lightning_logs\classification_final\embedding_1_Transformer_layers1_dim64_MLP128_2\checkpoints\epoch=18-step=361.ckpt',
+        'name': r"embedding_1_mlp"
+    },
+    {
+        'batch_size': 64,
+        'embedding_dim': 1,
+        'checkpoint_path': r'lightning_logs\classification_final\embedding_1_GINE_layers4_dim128_LinearNone_1\checkpoints\epoch=61-step=1178.ckpt',
+        'name': r"embedding_1_linear"
+    },
+    {
+        'batch_size': 64,
+        'embedding_dim': 2,
+        'checkpoint_path': r'lightning_logs\classification_final\embedding_2_GINE_layers2_dim128_LinearNone_3\checkpoints\epoch=43-step=836.ckpt',
+        'name': r"embedding_2_linear"
+    },
+    {
+        'batch_size': 64,
+        'embedding_dim': 2,
+        'checkpoint_path': r'lightning_logs\classification_final\embedding_2_Transformer_layers2_dim128_MLP128_1\checkpoints\epoch=23-step=456.ckpt',
+        'name': r"embedding_2_mlp"
+    },
+    {
+        'batch_size': 64,
+        'embedding_dim': 16,
+        'checkpoint_path': r'lightning_logs\classification_final\embedding_16_Transformer_layers2_dim32_LinearNone_0\checkpoints\epoch=95-step=1824.ckpt',
+    },
+    {
+        'batch_size': 64,
+        'embedding_dim': 32,
+        'checkpoint_path': r'lightning_logs\classification_final\embedding_32_GINE_layers2_dim128_LinearNone_2\checkpoints\epoch=38-step=741.ckpt',
+    },
+]
+
+
+# CONFIG = {
+#     'batch_size': 64,
+#     'embedding_dim': 1,  # [1, 2]
+#     'checkpoint_path': 'lightning_logs_classification_test1/version_13/checkpoints/epoch=36-step=370.ckpt',
+# }
 
 if __name__ == "__main__":
-    dm = BACEDataModule(batch_size=CONFIG['batch_size'])
-    dm.setup()
+    for CONFIG in configs:
+        dm = BACEDataModule(batch_size=CONFIG['batch_size'])
+        dm.setup()
 
-    model = MoleculeNetClassificationModel.load_from_checkpoint(CONFIG['checkpoint_path'])
+        model = MoleculeNetClassificationModel.load_from_checkpoint(CONFIG['checkpoint_path'])
 
-    trainer = L.Trainer()
+        trainer = L.Trainer()
 
-    trainer.test(model, datamodule=dm)
+        trainer.test(model, datamodule=dm)
 
-    if CONFIG['embedding_dim'] == 1:
-        visualize_classification_1d(model, dm)
-    elif CONFIG['embedding_dim'] == 2:
-        visualize_classification_2d(model, dm)
+        if CONFIG['embedding_dim'] == 1:
+            visualize_classification_1d(model, dm, CONFIG['name'])
+        elif CONFIG['embedding_dim'] == 2:
+            visualize_classification_2d(model, dm, CONFIG['name'])
